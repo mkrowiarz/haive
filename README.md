@@ -27,3 +27,74 @@ Initially targeting Symfony (7/8, PHP 8.3+) but designed to be framework-agnosti
 | MCP | **mcp-go** (`mark3labs/mcp-go`) | Go MCP SDK with stdio transport support |
 | Config | **JSON + JSON Schema** | Native parsing, editor autocompletion via `$schema` |
 | CLI | **cobra** or bare `os.Args` | One-shot commands for scripting |
+
+## Phase 1: Core Library (Project Commands)
+
+Current implementation supports project information and initialization commands.
+
+### Project Commands
+
+**`project.info`**: Get project configuration and status
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/mkrowiarz/mcp-symfony-stack/internal/core/commands"
+)
+
+func main() {
+    info, err := commands.Info(".")
+    if err != nil {
+        fmt.Printf("Error: %v\n", err)
+        return
+    }
+
+    fmt.Printf("Project: %s (%s)\n", info.ConfigSummary.Name, info.ConfigSummary.Type)
+    fmt.Printf("Docker Compose: %v\n", info.DockerComposeExists)
+    fmt.Printf("Env files: %v\n", info.EnvFiles)
+}
+```
+
+**`project.init`**: Generate suggested project configuration
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/mkrowiarz/mcp-symfony-stack/internal/core/commands"
+)
+
+func main() {
+    suggestion, err := commands.Init(".")
+    if err != nil {
+        fmt.Printf("Error: %v\n", err)
+        return
+    }
+
+    fmt.Println("Suggested configuration:")
+    fmt.Println(suggestion.SuggestedConfig)
+    fmt.Printf("\nDetected services: %v\n", suggestion.DetectedServices)
+    fmt.Printf("Detected env vars: %v\n", suggestion.DetectedEnvVars)
+}
+```
+
+### Configuration File
+
+Project configuration lives in `.claude/project.json`:
+
+```json
+{
+  "project": {
+    "name": "your-project",
+    "type": "symfony"
+  },
+  "docker": {
+    "compose_file": "docker-compose.yaml"
+  }
+}
+```
+
+*Note: Phase 1 supports minimal configuration only. Database and worktrees sections will be added in phase 2.*

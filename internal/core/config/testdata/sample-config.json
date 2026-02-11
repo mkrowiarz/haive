@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/mkrowiarz/mcp-symfony-stack/main/schema.json",
+  "project": {
+    "name": "facility-saas",
+    "type": "symfony"
+  },
+  "docker": {
+    "compose_file": "docker-compose.yaml"
+  },
+  "database": {
+    "service": "database",
+    "dsn": "${DATABASE_URL}",
+    "allowed": [
+      "facility_app",
+      "facility_app_test",
+      "facility_app_wt_*"
+    ],
+    "dumps_path": "var/dumps"
+  },
+  "worktrees": {
+    "base_path": "../worktrees",
+    "db_per_worktree": true,
+    "db_prefix": "facility_app_wt_"
+  }
+}

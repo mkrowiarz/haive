@@ -1,0 +1,21 @@
+services:
+  php:
+    image: php:8.3-fpm
+    volumes:
+      - .:/app
+
+  database:
+    image: mariadb:11.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: facility_app
+    volumes:
+      - db_data:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  db_data:
