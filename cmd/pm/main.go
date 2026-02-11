@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/mcp"
+	"github.com/mkrowiarz/mcp-symfony-stack/internal/tui"
 )
 
 func main() {
@@ -20,5 +21,9 @@ func main() {
 		return
 	}
 
-	fmt.Println("phase 1: core library only")
+	// Default: run TUI
+	if err := tui.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "TUI error: %v\n", err)
+		os.Exit(1)
+	}
 }
