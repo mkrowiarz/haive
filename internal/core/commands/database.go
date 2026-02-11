@@ -40,7 +40,7 @@ func Dump(projectRoot, dbName string, tables []string) (*types.DumpResult, error
 
 	engine := getEngine(parsedDSN.Engine)
 
-	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFile)
+	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFiles)
 
 	destPath := filepath.Join(cfg.Database.DumpsPath,
 		fmt.Sprintf("%s_%s.sql", dbName, time.Now().Format("2006-01-02T15-04")))
@@ -76,7 +76,7 @@ func CreateDB(projectRoot, dbName string) (*types.CreateResult, error) {
 
 	engine := getEngine(parsedDSN.Engine)
 
-	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFile)
+	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFiles)
 
 	return dbExecutor.Create(cfg.Database.Service, parsedDSN, dbName)
 }
@@ -112,7 +112,7 @@ func ImportDB(projectRoot, dbName, sourcePath string) (*types.ImportResult, erro
 
 	engine := getEngine(parsedDSN.Engine)
 
-	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFile)
+	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFiles)
 
 	return dbExecutor.Import(cfg.Database.Service, parsedDSN, sourcePath, dbName)
 }
@@ -145,7 +145,7 @@ func DropDB(projectRoot, dbName string) (*types.DropResult, error) {
 
 	engine := getEngine(parsedDSN.Engine)
 
-	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFile)
+	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFiles)
 
 	return dbExecutor.Drop(cfg.Database.Service, parsedDSN, dbName)
 }
@@ -170,7 +170,7 @@ func ListDBs(projectRoot string) (*types.DatabaseListResult, error) {
 
 	engine := getEngine(parsedDSN.Engine)
 
-	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFile)
+	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFiles)
 
 	return dbExecutor.List(cfg.Database.Service, parsedDSN, parsedDSN.Database)
 }
@@ -209,7 +209,7 @@ func CloneDB(projectRoot, sourceDB, targetDB string) (*types.CloneResult, error)
 
 	engine := getEngine(parsedDSN.Engine)
 
-	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFile)
+	dbExecutor := executor.NewDockerDatabaseExecutor(engine, cfg.Docker.ComposeFiles)
 
 	_, err = dbExecutor.Create(cfg.Database.Service, parsedDSN, targetDB)
 	if err != nil {

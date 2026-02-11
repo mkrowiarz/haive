@@ -65,7 +65,7 @@ type Project struct {
 }
 
 type Docker struct {
-	ComposeFile string `json:"compose_file,omitempty"`
+	ComposeFiles []string `json:"compose_files,omitempty"`
 }
 
 type Database struct {

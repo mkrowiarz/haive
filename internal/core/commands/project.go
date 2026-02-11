@@ -196,7 +196,7 @@ func generateSuggestedConfig(projectType string, services map[string]string) str
     "type": "%s"
   },
   "docker": {
-    "compose_file": "docker-compose.yaml"
+    "compose_files": ["docker-compose.yaml"]
   }
 }
 // Note: schema.json will be generated in phase 2 from config structs

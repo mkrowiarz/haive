@@ -21,22 +21,32 @@ type DatabaseExecutor interface {
 }
 
 type DockerDatabaseExecutor struct {
-	engine      engines.DatabaseEngine
-	composeFile string
+	engine       engines.DatabaseEngine
+	composeFiles []string
 }
 
-func NewDockerDatabaseExecutor(engine engines.DatabaseEngine, composeFile string) *DockerDatabaseExecutor {
+func NewDockerDatabaseExecutor(engine engines.DatabaseEngine, composeFiles []string) *DockerDatabaseExecutor {
 	return &DockerDatabaseExecutor{
-		engine:      engine,
-		composeFile: composeFile,
+		engine:       engine,
+		composeFiles: composeFiles,
 	}
+}
+
+func (d *DockerDatabaseExecutor) buildComposeArgs(subcmd ...string) []string {
+	var args []string
+	args = append(args, "compose")
+	for _, f := range d.composeFiles {
+		args = append(args, "-f", f)
+	}
+	args = append(args, subcmd...)
+	return args
 }
 
 func (d *DockerDatabaseExecutor) Dump(service string, dsn *types.DSN, destPath string, tables []string) (*types.DumpResult, error) {
 	start := time.Now()
 
 	cmd := d.engine.BuildDumpCommand(dsn, tables)
-	args := append([]string{"compose", "-f", d.composeFile, "exec", "-T", service}, cmd...)
+	args := append(d.buildComposeArgs("exec", "-T", service), cmd...)
 
 	execCmd := exec.Command("docker", args...)
 	output, err := execCmd.Output()
@@ -60,7 +70,7 @@ func (d *DockerDatabaseExecutor) Dump(service string, dsn *types.DSN, destPath s
 
 func (d *DockerDatabaseExecutor) Create(service string, dsn *types.DSN, dbName string) (*types.CreateResult, error) {
 	cmd := d.engine.BuildCreateCommand(dsn, dbName)
-	args := append([]string{"compose", "-f", d.composeFile, "exec", "-T", service}, cmd...)
+	args := append(d.buildComposeArgs("exec", "-T", service), cmd...)
 
 	execCmd := exec.Command("docker", args...)
 	if err := execCmd.Run(); err != nil {
@@ -79,7 +89,7 @@ func (d *DockerDatabaseExecutor) Import(service string, dsn *types.DSN, sourcePa
 	}
 
 	cmd := d.engine.BuildImportCommand(dsn, dbName)
-	args := append([]string{"compose", "-f", d.composeFile, "exec", "-T", service}, cmd...)
+	args := append(d.buildComposeArgs("exec", "-T", service), cmd...)
 
 	execCmd := exec.Command("docker", args...)
 	execCmd.Stdin = bytes.NewReader(sqlData)
@@ -97,7 +107,7 @@ func (d *DockerDatabaseExecutor) Import(service string, dsn *types.DSN, sourcePa
 
 func (d *DockerDatabaseExecutor) Drop(service string, dsn *types.DSN, dbName string) (*types.DropResult, error) {
 	cmd := d.engine.BuildDropCommand(dsn, dbName)
-	args := append([]string{"compose", "-f", d.composeFile, "exec", "-T", service}, cmd...)
+	args := append(d.buildComposeArgs("exec", "-T", service), cmd...)
 
 	execCmd := exec.Command("docker", args...)
 	if err := execCmd.Run(); err != nil {
@@ -109,7 +119,7 @@ func (d *DockerDatabaseExecutor) Drop(service string, dsn *types.DSN, dbName str
 
 func (d *DockerDatabaseExecutor) List(service string, dsn *types.DSN, defaultDB string) (*types.DatabaseListResult, error) {
 	cmd := d.engine.BuildListCommand(dsn)
-	args := append([]string{"compose", "-f", d.composeFile, "exec", "-T", service}, cmd...)
+	args := append(d.buildComposeArgs("exec", "-T", service), cmd...)
 
 	execCmd := exec.Command("docker", args...)
 	output, err := execCmd.Output()

@@ -21,7 +21,7 @@ func TestCreateIsolatedWorktreeNoDB(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"worktrees": {"base_path": "` + tmpDir + `/wt"}
 	}`
 	if err := os.WriteFile(cfgPath, []byte(cfgContent), 0644); err != nil {
@@ -49,7 +49,7 @@ func TestRemoveIsolatedWorktreeNoDB(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"worktrees": {"base_path": "` + tmpDir + `/wt"}
 	}`
 	if err := os.WriteFile(cfgPath, []byte(cfgContent), 0644); err != nil {
@@ -77,7 +77,7 @@ func TestRemoveIsolatedWorktreeWithDB(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",

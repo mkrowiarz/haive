@@ -23,7 +23,7 @@ func TestDumpDisallowedDB(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
@@ -66,7 +66,7 @@ func TestDropDefaultDB(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
@@ -109,7 +109,7 @@ func TestImportFileNotFound(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
@@ -152,7 +152,7 @@ func TestCreateDBDisallowed(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
@@ -195,7 +195,7 @@ func TestWildcardAllowedPattern(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
@@ -234,7 +234,7 @@ func TestMissingDatabaseConfig(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"}
+		"docker": {"compose_files": ["docker-compose.yaml"]}
 	}`
 	if err := os.WriteFile(cfgPath, []byte(cfgContent), 0644); err != nil {
 		t.Fatal(err)
@@ -261,7 +261,7 @@ func TestListDBsMissingConfig(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"}
+		"docker": {"compose_files": ["docker-compose.yaml"]}
 	}`
 	if err := os.WriteFile(cfgPath, []byte(cfgContent), 0644); err != nil {
 		t.Fatal(err)
@@ -298,7 +298,7 @@ func TestCloneDBDisallowedSource(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
@@ -341,7 +341,7 @@ func TestCloneDBDisallowedTarget(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
@@ -389,7 +389,7 @@ func TestListDumpsEmptyDirectory(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
@@ -436,7 +436,7 @@ func TestListDumpsValidFiles(t *testing.T) {
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
-		"docker": {"compose_file": "docker-compose.yaml"},
+		"docker": {"compose_files": ["docker-compose.yaml"]},
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",

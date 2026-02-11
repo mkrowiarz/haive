@@ -116,8 +116,8 @@ func TestLoad(t *testing.T) {
 			if cfg.Docker == nil {
 				t.Error("expected Docker section, got nil")
 			} else {
-				if cfg.Docker.ComposeFile != "docker-compose.yaml" {
-					t.Errorf("expected compose_file 'docker-compose.yaml', got '%s'", cfg.Docker.ComposeFile)
+				if len(cfg.Docker.ComposeFiles) != 1 || cfg.Docker.ComposeFiles[0] != "docker-compose.yaml" {
+					t.Errorf("expected compose_files ['docker-compose.yaml'], got '%v'", cfg.Docker.ComposeFiles)
 				}
 			}
 		})

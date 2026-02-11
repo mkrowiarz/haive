@@ -5,7 +5,7 @@
     "type": "symfony"
   },
   "docker": {
-    "compose_file": "docker-compose.yaml"
+    "compose_files": ["docker-compose.yaml"]
   },
   "database": {
     "service": "database",
