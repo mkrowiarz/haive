@@ -950,7 +950,7 @@ These are not part of the initial implementation but are logical extensions:
 - **`console` command** — run Symfony `bin/console` or Laravel `artisan` commands inside the app container
 - **`docker` commands** — start/stop/restart Docker Compose services from the TUI
 - **`db.snapshot` / `db.restore`** — named snapshots for quick save/restore during development
-- **PostgreSQL support** — DSN parsing and guard logic are engine-agnostic; only dump/import commands need engine-specific variants (already accounted for in the spec)
+- **PostgreSQL support** — DSN parsing and guard logic are engine-agnostic; only dump/import commands need engine-specific variants. TODO: Implement `PostgresEngine` with `pg_dump`, `psql`, `createdb`, `dropdb` commands. (Out of scope for current phases)
 - **Multi-compose support** — projects with multiple compose files (`docker-compose.yaml` + `docker-compose.override.yaml`)
 - **Hooks** — pre/post hooks for operations (e.g., `composer install` after creating a worktree, `bin/console doctrine:migrations:migrate` after cloning a DB)
 - **Config profiles** — multiple database sections for projects with multiple database services
