@@ -84,7 +84,7 @@ func detectEnvFiles(projectRoot string) []string {
 }
 
 func dockerComposeExists(projectRoot string) bool {
-	paths := []string{"docker-compose.yaml", "docker-compose.yml", "docker-compose.yml.yaml"}
+	paths := []string{"compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml"}
 	for _, path := range paths {
 		fullPath := filepath.Join(projectRoot, path)
 		if _, err := os.Stat(fullPath); err == nil {
@@ -101,7 +101,7 @@ type DockerCompose struct {
 }
 
 func detectDockerServices(projectRoot string) (map[string]string, error) {
-	paths := []string{"docker-compose.yaml", "docker-compose.yml"}
+	paths := []string{"compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml"}
 	for _, path := range paths {
 		fullPath := filepath.Join(projectRoot, path)
 		data, err := os.ReadFile(fullPath)
@@ -196,7 +196,7 @@ func generateSuggestedConfig(projectType string, services map[string]string) str
     "type": "%s"
   },
   "docker": {
-    "compose_files": ["docker-compose.yaml"]
+    "compose_files": ["compose.yaml"]
   }
 }
 // Note: schema.json will be generated in phase 2 from config structs
