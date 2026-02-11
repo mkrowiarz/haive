@@ -89,6 +89,7 @@ func Load(projectRoot string) (*Config, error) {
 				Message: "database.dsn is required when database section is present",
 			}
 		}
+		cfg.Database.DSN = ResolveEnvVars(cfg.Database.DSN, projectRoot)
 		if len(cfg.Database.Allowed) == 0 {
 			return nil, &types.CommandError{
 				Code:    types.ErrConfigInvalid,
