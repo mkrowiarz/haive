@@ -2,10 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/config"
@@ -44,7 +44,10 @@ func CreateIsolatedWorktree(projectRoot, branch, newBranch, newDB string) (*type
 	}
 
 	envPath := filepath.Join(result.Path, ".env.local")
-	newDSN := strings.Replace(cfg.Database.DSN, cloneResult.Source, cloneResult.Target, 1)
+	newDSN, err := replaceDSNDatabase(cfg.Database.DSN, cloneResult.Source, cloneResult.Target)
+	if err != nil {
+		return workflowResult, fmt.Errorf("worktree and DB created but DSN replacement failed: %w", err)
+	}
 
 	if err := os.WriteFile(envPath, []byte("DATABASE_URL="+newDSN+"\n"), 0644); err != nil {
 		return workflowResult, fmt.Errorf("worktree and DB created but .env.local patch failed: %w", err)
@@ -93,4 +96,18 @@ func RemoveIsolatedWorktree(projectRoot, branch string, dropDB bool) (*types.Wor
 	workflowResult.DatabaseName = targetDB
 
 	return workflowResult, nil
+}
+
+func replaceDSNDatabase(dsnString, oldDB, newDB string) (string, error) {
+	u, err := url.Parse(dsnString)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse DSN: %w", err)
+	}
+
+	if u.Path == "" || u.Path == "/" {
+		return "", fmt.Errorf("DSN has no database path")
+	}
+
+	u.Path = "/" + newDB
+	return u.String(), nil
 }

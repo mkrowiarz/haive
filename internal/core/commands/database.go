@@ -190,8 +190,12 @@ func CloneDB(projectRoot, sourceDB, targetDB string) (*types.CloneResult, error)
 		}
 	}
 
+	parsedDSN, err := dsn.ParseDSN(cfg.Database.DSN)
+	if err != nil {
+		return nil, err
+	}
+
 	if sourceDB == "" {
-		parsedDSN, _ := dsn.ParseDSN(cfg.Database.DSN)
 		sourceDB = parsedDSN.Database
 	}
 
@@ -200,11 +204,6 @@ func CloneDB(projectRoot, sourceDB, targetDB string) (*types.CloneResult, error)
 	}
 
 	if err := core.IsDatabaseAllowed(targetDB, cfg.Database.Allowed); err != nil {
-		return nil, err
-	}
-
-	parsedDSN, err := dsn.ParseDSN(cfg.Database.DSN)
-	if err != nil {
 		return nil, err
 	}
 
@@ -219,14 +218,19 @@ func CloneDB(projectRoot, sourceDB, targetDB string) (*types.CloneResult, error)
 
 	tmpFile := filepath.Join(os.TempDir(), fmt.Sprintf("clone_%s_%d.sql", targetDB, time.Now().UnixNano()))
 
-	dumpResult, err := dbExecutor.Dump(cfg.Database.Service, parsedDSN, tmpFile, nil)
+	sourceDSN := *parsedDSN
+	sourceDSN.Database = sourceDB
+
+	dumpResult, err := dbExecutor.Dump(cfg.Database.Service, &sourceDSN, tmpFile, nil)
 	if err != nil {
+		dbExecutor.Drop(cfg.Database.Service, parsedDSN, targetDB)
 		os.Remove(tmpFile)
 		return nil, fmt.Errorf("failed to dump source database: %w", err)
 	}
 
 	_, err = dbExecutor.Import(cfg.Database.Service, parsedDSN, tmpFile, targetDB)
 	if err != nil {
+		dbExecutor.Drop(cfg.Database.Service, parsedDSN, targetDB)
 		os.Remove(tmpFile)
 		return nil, fmt.Errorf("failed to import into target database: %w", err)
 	}
@@ -257,6 +261,10 @@ func ListDumps(projectRoot string) (*types.DumpsListResult, error) {
 	dumpsPath := cfg.Database.DumpsPath
 	if dumpsPath == "" {
 		dumpsPath = "var/dumps"
+	}
+
+	if !filepath.IsAbs(dumpsPath) {
+		dumpsPath = filepath.Join(projectRoot, dumpsPath)
 	}
 
 	if _, err := os.Stat(dumpsPath); os.IsNotExist(err) {
