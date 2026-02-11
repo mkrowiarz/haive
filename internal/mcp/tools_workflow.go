@@ -3,7 +3,6 @@ package mcp
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -14,12 +13,14 @@ import (
 func registerWorkflowTools(s *server.MCPServer) {
 	s.AddTool(mcp.NewTool("workflow.create",
 		mcp.WithDescription("Create isolated worktree with database (if db_per_worktree enabled)"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 		mcp.WithString("branch", mcp.Required(), mcp.Description("Branch name")),
 		mcp.WithBoolean("new_branch", mcp.Description("Create new branch (default false)")),
 	), handleWorkflowCreate)
 
 	s.AddTool(mcp.NewTool("workflow.remove",
 		mcp.WithDescription("Remove worktree and optionally drop database (destructive)"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 		mcp.WithString("branch", mcp.Required(), mcp.Description("Branch name")),
 		mcp.WithBoolean("drop_db", mcp.Description("Drop associated database (default true)")),
 		mcp.WithBoolean("confirm", mcp.Required(), mcp.Description("Must be true to confirm destructive operation")),
@@ -27,7 +28,7 @@ func registerWorkflowTools(s *server.MCPServer) {
 }
 
 func handleWorkflowCreate(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	args := request.GetArguments()
 	branch := args["branch"].(string)
 
@@ -56,7 +57,7 @@ func handleWorkflowRemove(ctx context.Context, request mcp.CallToolRequest) (*mc
 		})
 	}
 
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	branch := args["branch"].(string)
 
 	dropDB := true

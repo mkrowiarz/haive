@@ -3,7 +3,6 @@ package mcp
 import (
 	"context"
 	"encoding/json"
-	"os"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -14,44 +13,51 @@ import (
 func registerDatabaseTools(s *server.MCPServer) {
 	s.AddTool(mcp.NewTool("db.list",
 		mcp.WithDescription("List all databases in the container"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 	), handleDbList)
 
 	s.AddTool(mcp.NewTool("db.dump",
 		mcp.WithDescription("Dump a database to a SQL file"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 		mcp.WithString("database", mcp.Description("Database name (optional, defaults to DSN database)")),
 		mcp.WithArray("tables", mcp.Description("Specific tables to dump (optional)")),
 	), handleDbDump)
 
 	s.AddTool(mcp.NewTool("db.import",
 		mcp.WithDescription("Import a SQL file into a database"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 		mcp.WithString("database", mcp.Required(), mcp.Description("Target database name")),
 		mcp.WithString("sql_path", mcp.Required(), mcp.Description("Path to SQL file")),
 	), handleDbImport)
 
 	s.AddTool(mcp.NewTool("db.create",
 		mcp.WithDescription("Create a new empty database"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 		mcp.WithString("database", mcp.Required(), mcp.Description("Database name")),
 	), handleDbCreate)
 
 	s.AddTool(mcp.NewTool("db.drop",
 		mcp.WithDescription("Drop a database (destructive)"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 		mcp.WithString("database", mcp.Required(), mcp.Description("Database name")),
 		mcp.WithBoolean("confirm", mcp.Required(), mcp.Description("Must be true to confirm destructive operation")),
 	), handleDbDrop)
 
 	s.AddTool(mcp.NewTool("db.clone",
 		mcp.WithDescription("Clone a database (dump + create + import)"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 		mcp.WithString("source", mcp.Description("Source database (optional, defaults to DSN database)")),
 		mcp.WithString("target", mcp.Required(), mcp.Description("Target database name")),
 	), handleDbClone)
 
 	s.AddTool(mcp.NewTool("db.dumps",
 		mcp.WithDescription("List available SQL dump files"),
+		mcp.WithString("project_root", mcp.Description("Project root directory (optional, defaults to cwd)")),
 	), handleDbDumps)
 }
 
 func handleDbList(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	result, err := commands.ListDBs(projectRoot)
 	if err != nil {
 		return nil, toMCPError(err)
@@ -62,7 +68,7 @@ func handleDbList(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func handleDbDump(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	args := request.GetArguments()
 
 	database := ""
@@ -89,7 +95,7 @@ func handleDbDump(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func handleDbImport(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	args := request.GetArguments()
 
 	database := args["database"].(string)
@@ -105,7 +111,7 @@ func handleDbImport(ctx context.Context, request mcp.CallToolRequest) (*mcp.Call
 }
 
 func handleDbCreate(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	args := request.GetArguments()
 	database := args["database"].(string)
 
@@ -129,7 +135,7 @@ func handleDbDrop(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallTo
 		})
 	}
 
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	database := args["database"].(string)
 
 	result, err := commands.DropDB(projectRoot, database)
@@ -142,7 +148,7 @@ func handleDbDrop(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallTo
 }
 
 func handleDbClone(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	args := request.GetArguments()
 
 	source := ""
@@ -161,7 +167,7 @@ func handleDbClone(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallT
 }
 
 func handleDbDumps(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	projectRoot, _ := os.Getwd()
+	projectRoot := getProjectRoot(request)
 	result, err := commands.ListDumps(projectRoot)
 	if err != nil {
 		return nil, toMCPError(err)
