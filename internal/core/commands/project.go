@@ -32,6 +32,14 @@ func Info(projectRoot string) (*types.ProjectInfo, error) {
 		return nil, err
 	}
 
+	if cfg.Project == nil {
+		return &types.ProjectInfo{
+			ConfigSummary:       nil,
+			EnvFiles:            detectEnvFiles(projectRoot),
+			DockerComposeExists: dockerComposeExists(projectRoot),
+		}, nil
+	}
+
 	summary := &types.ConfigSummary{
 		Name: cfg.Project.Name,
 		Type: cfg.Project.Type,
@@ -203,7 +211,11 @@ func detectProjectName(projectRoot string) string {
 		}
 	}
 
-	return filepath.Base(projectRoot)
+	absPath, err := filepath.Abs(projectRoot)
+	if err != nil {
+		return "project"
+	}
+	return filepath.Base(absPath)
 }
 
 func detectDatabase(projectRoot string, services map[string]string) (service, dbName string) {
@@ -287,7 +299,6 @@ func generateSuggestedConfig(projectName, projectType string, composeFiles []str
 		cfg["database"] = map[string]interface{}{
 			"service":    dbService,
 			"dsn":        "${DATABASE_URL}",
-			"allowed":    []string{},
 			"dumps_path": "var/dumps",
 		}
 	}

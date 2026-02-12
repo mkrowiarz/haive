@@ -43,29 +43,47 @@ type Worktrees struct {
 // Database operations and worktree commands will be implemented in phase 2
 
 func Load(projectRoot string) (*Config, error) {
-	configPath := filepath.Join(projectRoot, ".claude", "project.json")
+	configPaths := []string{
+		filepath.Join(projectRoot, ".haive", "config.json"),
+		filepath.Join(projectRoot, ".haive.json"),
+	}
 
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		if os.IsNotExist(err) {
+	var lastErr error
+	for _, configPath := range configPaths {
+		data, err := os.ReadFile(configPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				lastErr = &types.CommandError{
+					Code:    types.ErrConfigMissing,
+					Message: fmt.Sprintf("config file not found (tried .haive/config.json and .haive.json)"),
+				}
+				continue
+			}
 			return nil, &types.CommandError{
-				Code:    types.ErrConfigMissing,
-				Message: fmt.Sprintf("config file not found at %s", configPath),
+				Code:    types.ErrConfigInvalid,
+				Message: fmt.Sprintf("failed to read config file: %v", err),
 			}
 		}
-		return nil, &types.CommandError{
-			Code:    types.ErrConfigInvalid,
-			Message: fmt.Sprintf("failed to read config file: %v", err),
+
+		var cfg Config
+		if err := json.Unmarshal(data, &cfg); err != nil {
+			return nil, &types.CommandError{
+				Code:    types.ErrConfigInvalid,
+				Message: fmt.Sprintf("invalid JSON in config file: %v", err),
+			}
 		}
+
+		if cfg.Project == nil && cfg.Database == nil && cfg.Docker == nil && cfg.Worktrees == nil {
+			continue
+		}
+
+		return validateConfig(&cfg, projectRoot)
 	}
 
-	var cfg Config
-	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, &types.CommandError{
-			Code:    types.ErrConfigInvalid,
-			Message: fmt.Sprintf("invalid JSON in config file: %v", err),
-		}
-	}
+	return nil, lastErr
+}
+
+func validateConfig(cfg *Config, projectRoot string) (*Config, error) {
 
 	if cfg.Worktrees != nil {
 		if cfg.Worktrees.BasePath == "" {
@@ -90,12 +108,6 @@ func Load(projectRoot string) (*Config, error) {
 			}
 		}
 		cfg.Database.DSN = ResolveEnvVars(cfg.Database.DSN, projectRoot)
-		if len(cfg.Database.Allowed) == 0 {
-			return nil, &types.CommandError{
-				Code:    types.ErrConfigInvalid,
-				Message: "database.allowed must have at least one pattern",
-			}
-		}
 		if cfg.Database.DumpsPath == "" {
 			cfg.Database.DumpsPath = "var/dumps"
 		}
@@ -108,5 +120,5 @@ func Load(projectRoot string) (*Config, error) {
 		}
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }

@@ -20,10 +20,7 @@ func TestLoad(t *testing.T) {
 			name:        "valid config loads successfully",
 			projectRoot: "./testdata",
 			setupFunc: func() (string, error) {
-				configPath := filepath.Join("./testdata", ".claude", "project.json")
-				if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-					return "", err
-				}
+				configPath := filepath.Join("./testdata", ".haive.json")
 				sampleConfig, err := os.ReadFile(filepath.Join("./testdata", "sample-config.json"))
 				if err != nil {
 					return "", err
@@ -31,7 +28,7 @@ func TestLoad(t *testing.T) {
 				return "", os.WriteFile(configPath, sampleConfig, 0644)
 			},
 			cleanupFunc: func() {
-				os.RemoveAll(filepath.Join("./testdata", ".claude"))
+				os.Remove(filepath.Join("./testdata", ".haive.json"))
 			},
 			expectedError: "",
 		},
@@ -48,10 +45,7 @@ func TestLoad(t *testing.T) {
 			name: "malformed JSON returns ErrConfigInvalid",
 			setupFunc: func() (string, error) {
 				tmpDir := t.TempDir()
-				configPath := filepath.Join(tmpDir, ".claude", "project.json")
-				if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-					return "", err
-				}
+				configPath := filepath.Join(tmpDir, ".haive.json")
 				return tmpDir, os.WriteFile(configPath, []byte("{invalid json"), 0644)
 			},
 			cleanupFunc:   func() {},

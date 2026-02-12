@@ -12,22 +12,6 @@ import (
 )
 
 func List(projectRoot string) ([]types.WorktreeInfo, error) {
-	_, err := config.Load(projectRoot)
-	if err != nil {
-		if cmdErr, ok := err.(*types.CommandError); ok && cmdErr.Code == types.ErrConfigMissing {
-			return nil, fmt.Errorf("no worktrees config, returning empty list")
-		}
-		return nil, err
-	}
-
-	convertWorktreeInfo := func(wt types.WorktreeInfo) types.WorktreeInfo {
-		return types.WorktreeInfo{
-			Path:   wt.Path,
-			Branch: wt.Branch,
-			IsMain: wt.IsMain,
-		}
-	}
-
 	externalWorktrees, err := executor.GitWorktreeList()
 	if err != nil {
 		return nil, err
@@ -35,7 +19,11 @@ func List(projectRoot string) ([]types.WorktreeInfo, error) {
 
 	result := make([]types.WorktreeInfo, len(externalWorktrees))
 	for i, wt := range externalWorktrees {
-		result[i] = convertWorktreeInfo(wt)
+		result[i] = types.WorktreeInfo{
+			Path:   wt.Path,
+			Branch: wt.Branch,
+			IsMain: wt.IsMain,
+		}
 	}
 
 	return result, nil

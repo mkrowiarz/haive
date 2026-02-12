@@ -13,11 +13,7 @@ func TestCreateIsolatedWorktreeNoDB(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -41,11 +37,7 @@ func TestRemoveIsolatedWorktreeNoDB(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -69,11 +61,7 @@ func TestRemoveIsolatedWorktreeWithDB(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},

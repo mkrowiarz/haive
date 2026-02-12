@@ -51,6 +51,9 @@ func SanitizeWorktreeName(branchName string) (dirName, dbName string) {
 }
 
 func IsDatabaseAllowed(dbName string, allowed []string) error {
+	if len(allowed) == 0 {
+		return nil
+	}
 	for _, pattern := range allowed {
 		matched, err := filepath.Match(pattern, dbName)
 		if err == nil && matched {

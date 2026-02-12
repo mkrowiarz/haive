@@ -15,11 +15,7 @@ func TestDumpDisallowedDB(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -58,11 +54,7 @@ func TestDropDefaultDB(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -101,11 +93,7 @@ func TestImportFileNotFound(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -144,11 +132,7 @@ func TestCreateDBDisallowed(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -156,7 +140,7 @@ func TestCreateDBDisallowed(t *testing.T) {
 		"database": {
 			"service": "database",
 			"dsn": "mysql://root:secret@database:3306/app",
-			"allowed": ["app"],
+			"allowed": ["app", "app_*"],
 			"dumps_path": "var/dumps"
 		}
 	}`
@@ -187,11 +171,7 @@ func TestWildcardAllowedPattern(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -226,11 +206,7 @@ func TestMissingDatabaseConfig(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -253,11 +229,7 @@ func TestListDBsMissingConfig(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -290,11 +262,7 @@ func TestCloneDBDisallowedSource(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -333,11 +301,7 @@ func TestCloneDBDisallowedTarget(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	cfgContent := `{
 		"project": {"name": "test", "type": "symfony"},
@@ -376,11 +340,7 @@ func TestListDumpsEmptyDirectory(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	dumpsDir := filepath.Join(tmpDir, "var", "dumps")
 	if err := os.MkdirAll(dumpsDir, 0755); err != nil {
@@ -419,11 +379,7 @@ func TestListDumpsValidFiles(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	cfgPath := filepath.Join(tmpDir, ".claude", "project.json")
-	cfgDir := filepath.Dir(cfgPath)
-	if err := os.MkdirAll(cfgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
+	cfgPath := filepath.Join(tmpDir, ".haive.json")
 
 	dumpsDir := filepath.Join(tmpDir, "var", "dumps")
 	if err := os.MkdirAll(dumpsDir, 0755); err != nil {

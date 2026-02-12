@@ -29,10 +29,7 @@ func TestInfo(t *testing.T) {
 	t.Run("existing config returns populated info", func(t *testing.T) {
 		tmpDir := t.TempDir()
 
-		configPath := filepath.Join(tmpDir, ".claude", "project.json")
-		if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
-			t.Fatalf("failed to create config dir: %v", err)
-		}
+		configPath := filepath.Join(tmpDir, ".haive.json")
 
 		sampleConfig, err := os.ReadFile(filepath.Join("../config/testdata", "sample-config.json"))
 		if err != nil {
@@ -366,6 +363,13 @@ func TestDetectProjectName(t *testing.T) {
 		expected := filepath.Base(tmpDir)
 		if name != expected {
 			t.Errorf("expected '%s', got '%s'", expected, name)
+		}
+	})
+
+	t.Run("handles dot as projectRoot", func(t *testing.T) {
+		name := detectProjectName(".")
+		if name == "." || name == "" {
+			t.Errorf("expected actual directory name, got '%s'", name)
 		}
 	})
 }
