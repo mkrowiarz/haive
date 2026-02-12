@@ -34,3 +34,54 @@ type dumpInfo struct {
 	size string
 	date string
 }
+
+type dumpFinishedMsg struct {
+	result *dumpResult
+	err    error
+}
+
+type dumpResult struct {
+	path string
+}
+
+type cloneFinishedMsg struct {
+	result *cloneResult
+	err    error
+}
+
+type cloneResult struct {
+	targetDB string
+}
+
+type dropFinishedMsg struct {
+	result *dropResult
+	err    error
+}
+
+type dropResult struct {
+	dbName string
+}
+
+type importFinishedMsg struct {
+	result *importResult
+	err    error
+}
+
+type importResult struct {
+	dbName string
+}
+
+type worktreeCreatedMsg struct {
+	result *worktreeResult
+	err    error
+}
+
+type worktreeResult struct {
+	branch string
+	path   string
+}
+
+type worktreeRemovedMsg struct {
+	result *worktreeResult
+	err    error
+}

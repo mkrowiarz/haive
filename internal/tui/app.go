@@ -2,11 +2,30 @@ package tui
 
 import (
 	"fmt"
+	"os/exec"
+	"runtime"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/commands"
+)
+
+type inputMode string
+
+const (
+	inputModeNone   inputMode = ""
+	inputModeClone  inputMode = "clone"
+	inputModeNewWT  inputMode = "newwt"
+	inputModeImport inputMode = "import"
+)
+
+type confirmMode string
+
+const (
+	confirmModeNone   confirmMode = ""
+	confirmModeDrop   confirmMode = "drop"
+	confirmModeRemove confirmMode = "remove"
 )
 
 type Model struct {
@@ -21,6 +40,22 @@ type Model struct {
 	databases     []databaseInfo
 	dumps         []dumpInfo
 	selectedIndex map[int]int
+
+	showModal    bool
+	modalTitle   string
+	modalMessage string
+	showError    bool
+	errorMessage string
+
+	inputMode   inputMode
+	inputValue  string
+	inputPrompt string
+
+	confirmMode   confirmMode
+	confirmTarget string
+	confirmPath   string
+
+	importDumpName string
 }
 
 func NewModel() Model {
@@ -142,16 +177,104 @@ func (m Model) refreshCurrentPane() tea.Cmd {
 	return nil
 }
 
+func (m Model) refreshAll() tea.Cmd {
+	return tea.Batch(m.loadProject, m.loadWorktrees, m.loadDatabases, m.loadDumps)
+}
+
 func (m Model) statusBarText() string {
+	if m.inputMode != inputModeNone {
+		return m.inputPrompt + m.inputValue + "_ [Enter]confirm [Esc]cancel"
+	}
+	if m.confirmMode != confirmModeNone {
+		return "Confirm " + string(m.confirmMode) + "? [y]es [n]o"
+	}
 	switch m.focusedPane {
 	case 2:
-		return "[n]ew [r]emove [o]pen [Tab]switch [q]uit"
+		return "[n]ew [x]remove [o]pen [Tab]switch [q]uit"
 	case 3:
 		return "[d]ump [c]lone [x]drop [Tab]switch [q]uit"
 	case 4:
 		return "[i]mport [x]delete [Tab]switch [q]uit"
 	default:
-		return "[Tab]switch [r]efresh [q]uit"
+		return "[Tab]switch [R]efresh all [q]uit"
+	}
+}
+
+func (m Model) dumpDatabase(dbName string) tea.Cmd {
+	return func() tea.Msg {
+		result, err := commands.Dump(m.projectRoot, dbName, nil)
+		if err != nil {
+			return dumpFinishedMsg{err: err}
+		}
+		return dumpFinishedMsg{result: &dumpResult{path: result.Path}}
+	}
+}
+
+func (m Model) cloneDatabase(sourceDB, targetDB string) tea.Cmd {
+	return func() tea.Msg {
+		result, err := commands.CloneDB(m.projectRoot, sourceDB, targetDB)
+		if err != nil {
+			return cloneFinishedMsg{err: err}
+		}
+		return cloneFinishedMsg{result: &cloneResult{targetDB: result.Target}}
+	}
+}
+
+func (m Model) dropDatabase(dbName string) tea.Cmd {
+	return func() tea.Msg {
+		result, err := commands.DropDB(m.projectRoot, dbName)
+		if err != nil {
+			return dropFinishedMsg{err: err}
+		}
+		return dropFinishedMsg{result: &dropResult{dbName: result.Database}}
+	}
+}
+
+func (m Model) importDump(dbName, dumpName string) tea.Cmd {
+	return func() tea.Msg {
+		result, err := commands.ImportDB(m.projectRoot, dbName, dumpName)
+		if err != nil {
+			return importFinishedMsg{err: err}
+		}
+		return importFinishedMsg{result: &importResult{dbName: result.Database}}
+	}
+}
+
+func (m Model) createWorktree(branch string) tea.Cmd {
+	return func() tea.Msg {
+		result, err := commands.Create(m.projectRoot, branch, true)
+		if err != nil {
+			return worktreeCreatedMsg{err: err}
+		}
+		return worktreeCreatedMsg{result: &worktreeResult{branch: result.Branch, path: result.Path}}
+	}
+}
+
+func (m Model) removeWorktree(branch string) tea.Cmd {
+	return func() tea.Msg {
+		result, err := commands.Remove(m.projectRoot, branch)
+		if err != nil {
+			return worktreeRemovedMsg{err: err}
+		}
+		return worktreeRemovedMsg{result: &worktreeResult{path: result.Path}}
+	}
+}
+
+func (m Model) openInTerminal(path string) tea.Cmd {
+	return func() tea.Msg {
+		var cmd *exec.Cmd
+		switch runtime.GOOS {
+		case "darwin":
+			cmd = exec.Command("open", "-a", "Terminal", path)
+		case "linux":
+			cmd = exec.Command("x-terminal-emulator", "--working-directory", path)
+		case "windows":
+			cmd = exec.Command("cmd", "/c", "start", "cmd", "/K", "cd", path)
+		default:
+			return nil
+		}
+		_ = cmd.Start()
+		return nil
 	}
 }
 
@@ -160,17 +283,127 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+
 	case projectLoadedMsg:
 		m.projectName = msg.name
 		m.projectType = msg.ptype
 		m.projectStatus = msg.status
+
 	case worktreesLoadedMsg:
 		m.worktrees = msg.worktrees
+
 	case databasesLoadedMsg:
 		m.databases = msg.databases
+
 	case dumpsLoadedMsg:
 		m.dumps = msg.dumps
+
+	case dumpFinishedMsg:
+		m.showModal = false
+		if msg.err != nil {
+			m.showError = true
+			m.errorMessage = fmt.Sprintf("Dump failed: %v", msg.err)
+		} else {
+			m.showModal = true
+			m.modalTitle = "✓ Dump Complete"
+			m.modalMessage = fmt.Sprintf("Created: %s", msg.result.path)
+		}
+		return m, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+			return hideModalMsg{}
+		})
+
+	case cloneFinishedMsg:
+		m.showModal = false
+		if msg.err != nil {
+			m.showError = true
+			m.errorMessage = fmt.Sprintf("Clone failed: %v", msg.err)
+		} else {
+			m.showModal = true
+			m.modalTitle = "✓ Clone Complete"
+			m.modalMessage = fmt.Sprintf("Created: %s", msg.result.targetDB)
+		}
+		return m, tea.Batch(m.loadDatabases, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+			return hideModalMsg{}
+		}))
+
+	case dropFinishedMsg:
+		m.showModal = false
+		m.confirmMode = confirmModeNone
+		if msg.err != nil {
+			m.showError = true
+			m.errorMessage = fmt.Sprintf("Drop failed: %v", msg.err)
+		} else {
+			m.showModal = true
+			m.modalTitle = "✓ Database Dropped"
+			m.modalMessage = msg.result.dbName
+		}
+		return m, tea.Batch(m.loadDatabases, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+			return hideModalMsg{}
+		}))
+
+	case importFinishedMsg:
+		m.showModal = false
+		m.inputMode = inputModeNone
+		if msg.err != nil {
+			m.showError = true
+			m.errorMessage = fmt.Sprintf("Import failed: %v", msg.err)
+		} else {
+			m.showModal = true
+			m.modalTitle = "✓ Import Complete"
+			m.modalMessage = fmt.Sprintf("Imported to: %s", msg.result.dbName)
+		}
+		return m, tea.Batch(m.loadDatabases, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+			return hideModalMsg{}
+		}))
+
+	case worktreeCreatedMsg:
+		m.showModal = false
+		m.inputMode = inputModeNone
+		if msg.err != nil {
+			m.showError = true
+			m.errorMessage = fmt.Sprintf("Create failed: %v", msg.err)
+		} else {
+			m.showModal = true
+			m.modalTitle = "✓ Worktree Created"
+			m.modalMessage = fmt.Sprintf("%s at %s", msg.result.branch, msg.result.path)
+		}
+		return m, tea.Batch(m.loadWorktrees, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+			return hideModalMsg{}
+		}))
+
+	case worktreeRemovedMsg:
+		m.showModal = false
+		m.confirmMode = confirmModeNone
+		if msg.err != nil {
+			m.showError = true
+			m.errorMessage = fmt.Sprintf("Remove failed: %v", msg.err)
+		} else {
+			m.showModal = true
+			m.modalTitle = "✓ Worktree Removed"
+			m.modalMessage = msg.result.path
+		}
+		return m, tea.Batch(m.loadWorktrees, tea.Tick(2*time.Second, func(t time.Time) tea.Msg {
+			return hideModalMsg{}
+		}))
+
+	case hideModalMsg:
+		m.showModal = false
+		m.showError = false
+
 	case tea.KeyMsg:
+		if m.showError {
+			m.showError = false
+			return m, nil
+		}
+
+		if m.inputMode != inputModeNone {
+			return m.handleInputMode(msg)
+		}
+
+		if m.confirmMode != confirmModeNone {
+			return m.handleConfirmMode(msg)
+		}
+
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -181,7 +414,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			return m, m.refreshCurrentPane()
 		case "R":
-			return m, tea.Batch(m.loadProject, m.loadWorktrees, m.loadDatabases, m.loadDumps)
+			return m, m.refreshAll()
 		case "up", "k":
 			if idx, ok := m.selectedIndex[m.focusedPane]; ok && idx > 0 {
 				m.selectedIndex[m.focusedPane] = idx - 1
@@ -200,7 +433,163 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if idx < maxIdx {
 				m.selectedIndex[m.focusedPane] = idx + 1
 			}
+		case "d":
+			if m.focusedPane == 3 && len(m.databases) > 0 {
+				idx := m.selectedIndex[3]
+				if idx < len(m.databases) {
+					db := m.databases[idx]
+					m.showModal = true
+					m.modalTitle = "Dumping database..."
+					m.modalMessage = db.name
+					return m, m.dumpDatabase(db.name)
+				}
+			}
+		case "c":
+			if m.focusedPane == 3 && len(m.databases) > 0 {
+				idx := m.selectedIndex[3]
+				if idx < len(m.databases) {
+					db := m.databases[idx]
+					m.inputMode = inputModeClone
+					m.inputValue = db.name + "_clone"
+					m.inputPrompt = "Clone " + db.name + " to: "
+					m.confirmTarget = db.name
+				}
+			}
+		case "x":
+			switch m.focusedPane {
+			case 2:
+				if len(m.worktrees) > 0 {
+					idx := m.selectedIndex[2]
+					if idx < len(m.worktrees) {
+						wt := m.worktrees[idx]
+						if wt.isMain {
+							m.showError = true
+							m.errorMessage = "Cannot remove main worktree"
+							return m, nil
+						}
+						m.confirmMode = confirmModeRemove
+						m.confirmTarget = wt.branch
+						m.confirmPath = wt.path
+					}
+				}
+			case 3:
+				if len(m.databases) > 0 {
+					idx := m.selectedIndex[3]
+					if idx < len(m.databases) {
+						db := m.databases[idx]
+						if db.isDefault {
+							m.showError = true
+							m.errorMessage = "Cannot drop the default database"
+							return m, nil
+						}
+						m.confirmMode = confirmModeDrop
+						m.confirmTarget = db.name
+					}
+				}
+			}
+		case "n":
+			if m.focusedPane == 2 {
+				m.inputMode = inputModeNewWT
+				m.inputValue = ""
+				m.inputPrompt = "New branch name: "
+			}
+		case "o":
+			if m.focusedPane == 2 && len(m.worktrees) > 0 {
+				idx := m.selectedIndex[2]
+				if idx < len(m.worktrees) {
+					wt := m.worktrees[idx]
+					return m, m.openInTerminal(wt.path)
+				}
+			}
+		case "i":
+			if m.focusedPane == 4 && len(m.dumps) > 0 {
+				idx := m.selectedIndex[4]
+				if idx < len(m.dumps) {
+					d := m.dumps[idx]
+					m.inputMode = inputModeImport
+					baseName := d.name
+					if len(baseName) > 4 && baseName[len(baseName)-4:] == ".sql" {
+						baseName = baseName[:len(baseName)-4]
+					}
+					m.inputValue = baseName
+					m.inputPrompt = "Import " + d.name + " to database: "
+					m.importDumpName = d.name
+				}
+			}
 		}
+	}
+	return m, nil
+}
+
+type hideModalMsg struct{}
+
+func (m Model) handleInputMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc":
+		m.inputMode = inputModeNone
+		m.inputValue = ""
+		return m, nil
+	case "enter":
+		if m.inputValue == "" {
+			return m, nil
+		}
+		switch m.inputMode {
+		case inputModeClone:
+			m.inputMode = inputModeNone
+			m.showModal = true
+			m.modalTitle = "Cloning database..."
+			m.modalMessage = m.confirmTarget + " → " + m.inputValue
+			return m, m.cloneDatabase(m.confirmTarget, m.inputValue)
+		case inputModeNewWT:
+			m.inputMode = inputModeNone
+			m.showModal = true
+			m.modalTitle = "Creating worktree..."
+			m.modalMessage = m.inputValue
+			return m, m.createWorktree(m.inputValue)
+		case inputModeImport:
+			m.inputMode = inputModeNone
+			m.showModal = true
+			m.modalTitle = "Importing dump..."
+			m.modalMessage = m.importDumpName + " → " + m.inputValue
+			return m, m.importDump(m.inputValue, m.importDumpName)
+		}
+		m.inputMode = inputModeNone
+	case "backspace":
+		if len(m.inputValue) > 0 {
+			m.inputValue = m.inputValue[:len(m.inputValue)-1]
+		}
+	default:
+		if len(msg.String()) == 1 {
+			m.inputValue += msg.String()
+		}
+	}
+	return m, nil
+}
+
+func (m Model) handleConfirmMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "Y":
+		target := m.confirmTarget
+		mode := m.confirmMode
+		m.confirmMode = confirmModeNone
+		m.confirmTarget = ""
+		m.confirmPath = ""
+		switch mode {
+		case confirmModeDrop:
+			m.showModal = true
+			m.modalTitle = "Dropping database..."
+			m.modalMessage = target
+			return m, m.dropDatabase(target)
+		case confirmModeRemove:
+			m.showModal = true
+			m.modalTitle = "Removing worktree..."
+			m.modalMessage = target
+			return m, m.removeWorktree(target)
+		}
+	case "n", "N", "esc":
+		m.confirmMode = confirmModeNone
+		m.confirmTarget = ""
+		m.confirmPath = ""
 	}
 	return m, nil
 }
@@ -272,7 +661,17 @@ func (m Model) View() string {
 
 	statusBar := statusBarStyle.Width(m.width).Render(m.statusBarText())
 
-	return lipgloss.JoinVertical(lipgloss.Top, mainLayout, statusBar)
+	baseView := lipgloss.JoinVertical(lipgloss.Top, mainLayout, statusBar)
+
+	if m.showError {
+		return m.renderErrorOverlay(baseView)
+	}
+
+	if m.showModal {
+		return m.renderModalOverlay(baseView)
+	}
+
+	return baseView
 }
 
 func (m Model) renderPane(title, content string, paneNum, width, height int) string {
@@ -288,8 +687,49 @@ func (m Model) renderPane(title, content string, paneNum, width, height int) str
 	return style.Width(width).Height(height).Render(pane)
 }
 
+func (m Model) renderModalOverlay(baseView string) string {
+	modalContent := fmt.Sprintf("%s\n\n%s", m.modalTitle, m.modalMessage)
+	modal := modalStyle.Render(modalContent)
+
+	overlay := lipgloss.Place(
+		m.width, m.height,
+		lipgloss.Center, lipgloss.Center,
+		modal,
+		lipgloss.WithWhitespaceChars(" "),
+		lipgloss.WithWhitespaceForeground(lipgloss.Color("#000000")),
+	)
+
+	return baseView + "\n" + lipgloss.NewStyle().
+		Width(m.width).
+		Height(m.height).
+		Render(lipgloss.NewStyle().Inherit(lipgloss.NewStyle()).Render(overlay))
+}
+
+func (m Model) renderErrorOverlay(baseView string) string {
+	errorContent := fmt.Sprintf("✗ Error\n\n%s\n\nPress any key to dismiss", m.errorMessage)
+	errorBox := modalStyle.
+		BorderForeground(errorColor).
+		Render(errorContent)
+
+	overlay := lipgloss.Place(
+		m.width, m.height,
+		lipgloss.Center, lipgloss.Center,
+		errorBox,
+		lipgloss.WithWhitespaceChars(" "),
+		lipgloss.WithWhitespaceForeground(lipgloss.Color("#000000")),
+	)
+
+	return baseView + "\n" + lipgloss.NewStyle().
+		Width(m.width).
+		Height(m.height).
+		Render(overlay)
+}
+
 func Run() error {
 	p := tea.NewProgram(NewModel(), tea.WithAltScreen())
 	_, err := p.Run()
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }
