@@ -610,10 +610,9 @@ func (m Model) View() string {
 	}
 
 	halfWidth := (m.width - 3) / 2
-	halfHeight := (m.height - 3) / 2
 
 	infoContent := fmt.Sprintf("Project: %s\nType: %s\nCompose: %s", m.projectName, m.projectType, m.projectStatus)
-	infoPane := m.renderPane("Info", infoContent, 1, halfWidth, halfHeight)
+	infoPane := m.renderPane("Info", infoContent, 1, halfWidth)
 
 	wtContent := ""
 	selectedIdx := m.selectedIndex[2]
@@ -631,7 +630,7 @@ func (m Model) View() string {
 	if wtContent == "" {
 		wtContent = "No worktrees"
 	}
-	worktreesPane := m.renderPane("Worktrees", wtContent, 2, halfWidth, halfHeight)
+	worktreesPane := m.renderPane("Worktrees", wtContent, 2, halfWidth)
 
 	dbContent := ""
 	selectedIdx = m.selectedIndex[3]
@@ -649,7 +648,7 @@ func (m Model) View() string {
 	if dbContent == "" {
 		dbContent = "No databases"
 	}
-	dbPane := m.renderPane("Databases", dbContent, 3, halfWidth, halfHeight)
+	dbPane := m.renderPane("Databases", dbContent, 3, halfWidth)
 
 	dumpsContent := ""
 	selectedIdx = m.selectedIndex[4]
@@ -663,7 +662,7 @@ func (m Model) View() string {
 	if dumpsContent == "" {
 		dumpsContent = "No dumps"
 	}
-	dumpsPane := m.renderPane("Dumps", dumpsContent, 4, halfWidth, halfHeight)
+	dumpsPane := m.renderPane("Dumps", dumpsContent, 4, halfWidth)
 
 	topRow := lipgloss.JoinHorizontal(lipgloss.Top, infoPane, worktreesPane)
 	bottomRow := lipgloss.JoinHorizontal(lipgloss.Top, dbPane, dumpsPane)
@@ -688,7 +687,7 @@ func (m Model) View() string {
 	return baseView
 }
 
-func (m Model) renderPane(title, content string, paneNum, width, height int) string {
+func (m Model) renderPane(title, content string, paneNum, width int) string {
 	style := paneStyle
 	if m.focusedPane == paneNum {
 		style = focusedPaneStyle
@@ -698,7 +697,7 @@ func (m Model) renderPane(title, content string, paneNum, width, height int) str
 	body := lipgloss.NewStyle().Padding(0, 1).Render(content)
 
 	pane := lipgloss.JoinVertical(lipgloss.Left, header, body)
-	return style.Width(width).Height(height).Render(pane)
+	return style.Width(width).Render(pane)
 }
 
 func (m Model) renderModalOverlay(baseView string) string {
