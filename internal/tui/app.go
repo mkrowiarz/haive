@@ -41,6 +41,7 @@ type Model struct {
 	databases     []databaseInfo
 	dumps         []dumpInfo
 	selectedIndex map[int]int
+	scrollOffset  map[int]int
 
 	showModal    bool
 	modalTitle   string
@@ -60,12 +61,15 @@ type Model struct {
 	importDumpName string
 }
 
+const maxVisibleLines = 6
+
 func NewModel() Model {
 	return Model{
 		focusedPane:   3,
 		projectRoot:   ".",
 		projectName:   "Loading...",
 		selectedIndex: map[int]int{1: 0, 2: 0, 3: 0, 4: 0},
+		scrollOffset:  map[int]int{1: 0, 2: 0, 3: 0, 4: 0},
 	}
 }
 
@@ -429,6 +433,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "up", "k":
 			if idx, ok := m.selectedIndex[m.focusedPane]; ok && idx > 0 {
 				m.selectedIndex[m.focusedPane] = idx - 1
+				m.clampScrollOffset(m.focusedPane)
 			}
 		case "down", "j":
 			idx := m.selectedIndex[m.focusedPane]
@@ -443,6 +448,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if idx < maxIdx {
 				m.selectedIndex[m.focusedPane] = idx + 1
+				m.clampScrollOffset(m.focusedPane)
 			}
 		case "d":
 			if m.focusedPane == 3 && len(m.databases) > 0 {
@@ -615,61 +621,31 @@ func (m Model) View() string {
 	infoContent := fmt.Sprintf("Project: %s | Type: %s | Compose: %s", m.projectName, m.projectType, m.projectStatus)
 	infoPane := m.renderPane("Info", infoContent, 1, paneWidth)
 
-	wtContent := ""
-	selectedIdx := m.selectedIndex[2]
-	for i, wt := range m.worktrees {
+	var wtItems []string
+	for _, wt := range m.worktrees {
 		prefix := "  "
 		if wt.isMain {
 			prefix = "* "
 		}
-		line := prefix + wt.branch
-		if i == selectedIdx && m.focusedPane == 2 {
-			line = selectedItemStyle.Render(line)
-		}
-		wtContent += line + " | "
+		wtItems = append(wtItems, prefix+wt.branch)
 	}
-	if wtContent == "" {
-		wtContent = "No worktrees"
-	} else {
-		wtContent = strings.TrimSuffix(wtContent, " | ")
-	}
-	worktreesPane := m.renderPane("Worktrees", wtContent, 2, paneWidth)
+	worktreesPane := m.renderListPane("Worktrees", wtItems, 2, paneWidth)
 
-	dbContent := ""
-	selectedIdx = m.selectedIndex[3]
-	for i, db := range m.databases {
+	var dbItems []string
+	for _, db := range m.databases {
 		prefix := "  "
 		if db.isDefault {
 			prefix = "* "
 		}
-		line := prefix + db.name
-		if i == selectedIdx && m.focusedPane == 3 {
-			line = selectedItemStyle.Render(line)
-		}
-		dbContent += line + " | "
+		dbItems = append(dbItems, prefix+db.name)
 	}
-	if dbContent == "" {
-		dbContent = "No databases"
-	} else {
-		dbContent = strings.TrimSuffix(dbContent, " | ")
-	}
-	dbPane := m.renderPane("Databases", dbContent, 3, paneWidth)
+	dbPane := m.renderListPane("Databases", dbItems, 3, paneWidth)
 
-	dumpsContent := ""
-	selectedIdx = m.selectedIndex[4]
-	for i, d := range m.dumps {
-		line := fmt.Sprintf("%s (%s)", d.name, d.size)
-		if i == selectedIdx && m.focusedPane == 4 {
-			line = selectedItemStyle.Render(line)
-		}
-		dumpsContent += line + " | "
+	var dumpItems []string
+	for _, d := range m.dumps {
+		dumpItems = append(dumpItems, fmt.Sprintf("%s (%s)", d.name, d.size))
 	}
-	if dumpsContent == "" {
-		dumpsContent = "No dumps"
-	} else {
-		dumpsContent = strings.TrimSuffix(dumpsContent, " | ")
-	}
-	dumpsPane := m.renderPane("Dumps", dumpsContent, 4, paneWidth)
+	dumpsPane := m.renderListPane("Dumps", dumpItems, 4, paneWidth)
 
 	mainLayout := lipgloss.JoinVertical(lipgloss.Left, infoPane, worktreesPane, dbPane, dumpsPane)
 
@@ -703,6 +679,67 @@ func (m Model) renderPane(title, content string, paneNum, width int) string {
 
 	pane := lipgloss.JoinVertical(lipgloss.Left, header, body)
 	return style.Width(width).Render(pane)
+}
+
+func (m Model) renderListPane(title string, items []string, paneNum, width int) string {
+	style := paneStyle
+	if m.focusedPane == paneNum {
+		style = focusedPaneStyle
+	}
+
+	totalItems := len(items)
+	scrollOffset := m.scrollOffset[paneNum]
+	selectedIdx := m.selectedIndex[paneNum]
+
+	scrollIndicator := ""
+	if totalItems > maxVisibleLines {
+		hasAbove := scrollOffset > 0
+		hasBelow := scrollOffset+maxVisibleLines < totalItems
+		if hasAbove && hasBelow {
+			scrollIndicator = " ↑↓"
+		} else if hasAbove {
+			scrollIndicator = " ↑"
+		} else if hasBelow {
+			scrollIndicator = " ↓"
+		}
+	}
+
+	header := titleStyle.Render(fmt.Sprintf("[%d] %s%s", paneNum, title, scrollIndicator))
+
+	endIdx := scrollOffset + maxVisibleLines
+	if endIdx > totalItems {
+		endIdx = totalItems
+	}
+
+	var visibleLines []string
+	for i := scrollOffset; i < endIdx; i++ {
+		line := items[i]
+		if i == selectedIdx && m.focusedPane == paneNum {
+			line = selectedItemStyle.Render(line)
+		}
+		visibleLines = append(visibleLines, line)
+	}
+
+	content := strings.Join(visibleLines, "\n")
+	if content == "" {
+		content = "No items"
+	}
+
+	body := lipgloss.NewStyle().Padding(0, 1).Render(content)
+
+	pane := lipgloss.JoinVertical(lipgloss.Left, header, body)
+	return style.Width(width).Render(pane)
+}
+
+func (m Model) clampScrollOffset(paneNum int) {
+	selectedIdx := m.selectedIndex[paneNum]
+	scrollOffset := m.scrollOffset[paneNum]
+
+	if selectedIdx < scrollOffset {
+		m.scrollOffset[paneNum] = selectedIdx
+	} else if selectedIdx >= scrollOffset+maxVisibleLines {
+		m.scrollOffset[paneNum] = selectedIdx - maxVisibleLines + 1
+	}
 }
 
 func (m Model) renderModalOverlay(baseView string) string {
