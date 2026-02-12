@@ -611,8 +611,9 @@ func (m Model) View() string {
 
 	leftWidth := m.width * 30 / 100
 	rightWidth := m.width - leftWidth - 3
-	leftPaneHeight := (m.height - 3) / 3
-	rightPaneHeight := m.height - 2
+	availableHeight := m.height - 2
+	leftPaneHeight := availableHeight / 3
+	rightPaneHeight := availableHeight
 
 	infoContent := fmt.Sprintf("Project: %s\nType: %s\nCompose: %s", m.projectName, m.projectType, m.projectStatus)
 	infoPane := m.renderPane("Info", infoContent, 1, leftWidth, leftPaneHeight)
@@ -665,7 +666,7 @@ func (m Model) View() string {
 	if dbContent == "" {
 		dbContent = "No databases"
 	}
-	dbPane := m.renderPane("Databases", dbContent, 3, rightWidth, rightPaneHeight)
+	dbPane := m.renderMainPane("Databases", dbContent, 3, rightWidth, rightPaneHeight)
 
 	leftCol := lipgloss.JoinVertical(lipgloss.Top, infoPane, worktreesPane, dumpsPane)
 	mainLayout := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, " ", dbPane)
@@ -690,6 +691,19 @@ func (m Model) View() string {
 }
 
 func (m Model) renderPane(title, content string, paneNum, width, height int) string {
+	style := paneStyle
+	if m.focusedPane == paneNum {
+		style = focusedPaneStyle
+	}
+
+	header := titleStyle.Render(fmt.Sprintf("[%d] %s", paneNum, title))
+	body := lipgloss.NewStyle().Padding(0, 1).Render(content)
+
+	pane := lipgloss.JoinVertical(lipgloss.Left, header, body)
+	return style.Width(width).Render(pane)
+}
+
+func (m Model) renderMainPane(title, content string, paneNum, width, height int) string {
 	style := paneStyle
 	if m.focusedPane == paneNum {
 		style = focusedPaneStyle
