@@ -783,9 +783,9 @@ func (m Model) renderDumpsPane(dumps []dumpInfo, paneNum, width int) string {
 	for i := scrollOffset; i < endIdx; i++ {
 		d := dumps[i]
 
-		nameWidth := contentWidth - 25
-		dateWidth := 13
-		sizeWidth := 10
+		nameWidth := contentWidth - 30
+		dateWidth := 15
+		sizeWidth := 12
 
 		displayName := shortenFilename(d.name, nameWidth)
 
