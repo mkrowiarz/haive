@@ -609,14 +609,11 @@ func (m Model) View() string {
 		return "Loading..."
 	}
 
-	leftWidth := m.width * 30 / 100
-	rightWidth := m.width - leftWidth - 3
-	availableHeight := m.height - 2
-	leftPaneHeight := availableHeight / 3
-	rightPaneHeight := availableHeight
+	halfWidth := (m.width - 3) / 2
+	halfHeight := (m.height - 3) / 2
 
 	infoContent := fmt.Sprintf("Project: %s\nType: %s\nCompose: %s", m.projectName, m.projectType, m.projectStatus)
-	infoPane := m.renderPane("Info", infoContent, 1, leftWidth, leftPaneHeight)
+	infoPane := m.renderPane("Info", infoContent, 1, halfWidth, halfHeight)
 
 	wtContent := ""
 	selectedIdx := m.selectedIndex[2]
@@ -634,21 +631,7 @@ func (m Model) View() string {
 	if wtContent == "" {
 		wtContent = "No worktrees"
 	}
-	worktreesPane := m.renderPane("Worktrees", wtContent, 2, leftWidth, leftPaneHeight)
-
-	dumpsContent := ""
-	selectedIdx = m.selectedIndex[4]
-	for i, d := range m.dumps {
-		line := fmt.Sprintf("%s (%s)", d.name, d.size)
-		if i == selectedIdx && m.focusedPane == 4 {
-			line = selectedItemStyle.Render(line)
-		}
-		dumpsContent += line + "\n"
-	}
-	if dumpsContent == "" {
-		dumpsContent = "No dumps"
-	}
-	dumpsPane := m.renderPane("Dumps", dumpsContent, 4, leftWidth, leftPaneHeight)
+	worktreesPane := m.renderPane("Worktrees", wtContent, 2, halfWidth, halfHeight)
 
 	dbContent := ""
 	selectedIdx = m.selectedIndex[3]
@@ -666,10 +649,25 @@ func (m Model) View() string {
 	if dbContent == "" {
 		dbContent = "No databases"
 	}
-	dbPane := m.renderMainPane("Databases", dbContent, 3, rightWidth, rightPaneHeight)
+	dbPane := m.renderPane("Databases", dbContent, 3, halfWidth, halfHeight)
 
-	leftCol := lipgloss.JoinVertical(lipgloss.Top, infoPane, worktreesPane, dumpsPane)
-	mainLayout := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, " ", dbPane)
+	dumpsContent := ""
+	selectedIdx = m.selectedIndex[4]
+	for i, d := range m.dumps {
+		line := fmt.Sprintf("%s (%s)", d.name, d.size)
+		if i == selectedIdx && m.focusedPane == 4 {
+			line = selectedItemStyle.Render(line)
+		}
+		dumpsContent += line + "\n"
+	}
+	if dumpsContent == "" {
+		dumpsContent = "No dumps"
+	}
+	dumpsPane := m.renderPane("Dumps", dumpsContent, 4, halfWidth, halfHeight)
+
+	topRow := lipgloss.JoinHorizontal(lipgloss.Top, infoPane, worktreesPane)
+	bottomRow := lipgloss.JoinHorizontal(lipgloss.Top, dbPane, dumpsPane)
+	mainLayout := lipgloss.JoinVertical(lipgloss.Left, topRow, bottomRow)
 
 	statusBar := statusBarStyle.Width(m.width).Render(m.statusBarText())
 
@@ -691,19 +689,6 @@ func (m Model) View() string {
 }
 
 func (m Model) renderPane(title, content string, paneNum, width, height int) string {
-	style := paneStyle
-	if m.focusedPane == paneNum {
-		style = focusedPaneStyle
-	}
-
-	header := titleStyle.Render(fmt.Sprintf("[%d] %s", paneNum, title))
-	body := lipgloss.NewStyle().Padding(0, 1).Render(content)
-
-	pane := lipgloss.JoinVertical(lipgloss.Left, header, body)
-	return style.Width(width).Render(pane)
-}
-
-func (m Model) renderMainPane(title, content string, paneNum, width, height int) string {
 	style := paneStyle
 	if m.focusedPane == paneNum {
 		style = focusedPaneStyle
