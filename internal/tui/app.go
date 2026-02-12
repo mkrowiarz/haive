@@ -695,8 +695,8 @@ func (m Model) renderPane(title, content string, paneNum, width, height int) str
 		style = focusedPaneStyle
 	}
 
-	header := titleStyle.Render(title)
-	body := lipgloss.NewStyle().Padding(1, 0).Render(content)
+	header := titleStyle.Render(fmt.Sprintf("[%d] %s", paneNum, title))
+	body := lipgloss.NewStyle().Padding(0, 1).Render(content)
 
 	pane := lipgloss.JoinVertical(lipgloss.Left, header, body)
 	return style.Width(width).Height(height).Render(pane)
