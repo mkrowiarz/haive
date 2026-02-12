@@ -20,13 +20,15 @@ type Model struct {
 	worktrees     []worktreeInfo
 	databases     []databaseInfo
 	dumps         []dumpInfo
+	selectedIndex map[int]int
 }
 
 func NewModel() Model {
 	return Model{
-		focusedPane: 3,
-		projectRoot: ".",
-		projectName: "Loading...",
+		focusedPane:   3,
+		projectRoot:   ".",
+		projectName:   "Loading...",
+		selectedIndex: map[int]int{1: 0, 2: 0, 3: 0, 4: 0},
 	}
 }
 
@@ -126,6 +128,33 @@ func formatDate(modified string) string {
 	return t.Format("Jan 02 15:04")
 }
 
+func (m Model) refreshCurrentPane() tea.Cmd {
+	switch m.focusedPane {
+	case 1:
+		return m.loadProject
+	case 2:
+		return m.loadWorktrees
+	case 3:
+		return m.loadDatabases
+	case 4:
+		return m.loadDumps
+	}
+	return nil
+}
+
+func (m Model) statusBarText() string {
+	switch m.focusedPane {
+	case 2:
+		return "[n]ew [r]emove [o]pen [Tab]switch [q]uit"
+	case 3:
+		return "[d]ump [c]lone [x]drop [Tab]switch [q]uit"
+	case 4:
+		return "[i]mport [x]delete [Tab]switch [q]uit"
+	default:
+		return "[Tab]switch [r]efresh [q]uit"
+	}
+}
+
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -149,6 +178,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.focusedPane = m.focusedPane%4 + 1
 		case "1", "2", "3", "4":
 			m.focusedPane = int(msg.String()[0] - '0')
+		case "r":
+			return m, m.refreshCurrentPane()
+		case "R":
+			return m, tea.Batch(m.loadProject, m.loadWorktrees, m.loadDatabases, m.loadDumps)
+		case "up", "k":
+			if idx, ok := m.selectedIndex[m.focusedPane]; ok && idx > 0 {
+				m.selectedIndex[m.focusedPane] = idx - 1
+			}
+		case "down", "j":
+			idx := m.selectedIndex[m.focusedPane]
+			maxIdx := 0
+			switch m.focusedPane {
+			case 2:
+				maxIdx = len(m.worktrees) - 1
+			case 3:
+				maxIdx = len(m.databases) - 1
+			case 4:
+				maxIdx = len(m.dumps) - 1
+			}
+			if idx < maxIdx {
+				m.selectedIndex[m.focusedPane] = idx + 1
+			}
 		}
 	}
 	return m, nil
@@ -167,12 +218,17 @@ func (m Model) View() string {
 	infoPane := m.renderPane("Info", infoContent, 1, leftWidth, paneHeight)
 
 	wtContent := ""
-	for _, wt := range m.worktrees {
+	selectedIdx := m.selectedIndex[2]
+	for i, wt := range m.worktrees {
 		prefix := "  "
 		if wt.isMain {
 			prefix = "* "
 		}
-		wtContent += prefix + wt.branch + "\n"
+		line := prefix + wt.branch
+		if i == selectedIdx && m.focusedPane == 2 {
+			line = selectedItemStyle.Render(line)
+		}
+		wtContent += line + "\n"
 	}
 	if wtContent == "" {
 		wtContent = "No worktrees"
@@ -180,8 +236,13 @@ func (m Model) View() string {
 	worktreesPane := m.renderPane("Worktrees", wtContent, 2, leftWidth, paneHeight)
 
 	dumpsContent := ""
-	for _, d := range m.dumps {
-		dumpsContent += fmt.Sprintf("%s (%s)\n", d.name, d.size)
+	selectedIdx = m.selectedIndex[4]
+	for i, d := range m.dumps {
+		line := fmt.Sprintf("%s (%s)", d.name, d.size)
+		if i == selectedIdx && m.focusedPane == 4 {
+			line = selectedItemStyle.Render(line)
+		}
+		dumpsContent += line + "\n"
 	}
 	if dumpsContent == "" {
 		dumpsContent = "No dumps"
@@ -189,12 +250,17 @@ func (m Model) View() string {
 	dumpsPane := m.renderPane("Dumps", dumpsContent, 4, leftWidth, paneHeight)
 
 	dbContent := ""
-	for _, db := range m.databases {
+	selectedIdx = m.selectedIndex[3]
+	for i, db := range m.databases {
 		prefix := "  "
 		if db.isDefault {
 			prefix = "* "
 		}
-		dbContent += prefix + db.name + "\n"
+		line := prefix + db.name
+		if i == selectedIdx && m.focusedPane == 3 {
+			line = selectedItemStyle.Render(line)
+		}
+		dbContent += line + "\n"
 	}
 	if dbContent == "" {
 		dbContent = "No databases"
@@ -204,7 +270,7 @@ func (m Model) View() string {
 	leftCol := lipgloss.JoinVertical(lipgloss.Top, infoPane, worktreesPane, dumpsPane)
 	mainLayout := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, " ", dbPane)
 
-	statusBar := statusBarStyle.Width(m.width).Render("[1-4]pane [Tab]switch [r]efresh [q]uit")
+	statusBar := statusBarStyle.Width(m.width).Render(m.statusBarText())
 
 	return lipgloss.JoinVertical(lipgloss.Top, mainLayout, statusBar)
 }
