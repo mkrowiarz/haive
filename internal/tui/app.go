@@ -169,6 +169,15 @@ func formatDate(modified string) string {
 	return t.Format("Jan 02 15:04")
 }
 
+func shortenFilename(name string, maxLen int) string {
+	if len(name) <= maxLen {
+		return name
+	}
+
+	keepLen := (maxLen - 3) / 2
+	return name[:keepLen] + "..." + name[len(name)-keepLen:]
+}
+
 func (m Model) refreshCurrentPane() tea.Cmd {
 	switch m.focusedPane {
 	case 1:
@@ -778,12 +787,14 @@ func (m Model) renderDumpsPane(dumps []dumpInfo, paneNum, width int) string {
 		dateWidth := 11
 		sizeWidth := 8
 
-		nameStyle := lipgloss.NewStyle().Width(nameWidth).MaxWidth(nameWidth)
+		displayName := shortenFilename(d.name, nameWidth)
+
+		nameStyle := lipgloss.NewStyle().Width(nameWidth)
 		dateStyle := lipgloss.NewStyle().Width(dateWidth).Align(lipgloss.Right)
 		sizeStyle := lipgloss.NewStyle().Width(sizeWidth).Align(lipgloss.Right)
 
 		line := lipgloss.JoinHorizontal(lipgloss.Top,
-			nameStyle.Render(d.name),
+			nameStyle.Render(displayName),
 			dateStyle.Render(d.date),
 			sizeStyle.Render(d.size),
 		)
