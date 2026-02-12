@@ -611,10 +611,11 @@ func (m Model) View() string {
 
 	leftWidth := m.width * 30 / 100
 	rightWidth := m.width - leftWidth - 3
-	paneHeight := (m.height - 4) / 2
+	leftPaneHeight := (m.height - 3) / 3
+	rightPaneHeight := m.height - 2
 
 	infoContent := fmt.Sprintf("Project: %s\nType: %s\nCompose: %s", m.projectName, m.projectType, m.projectStatus)
-	infoPane := m.renderPane("Info", infoContent, 1, leftWidth, paneHeight)
+	infoPane := m.renderPane("Info", infoContent, 1, leftWidth, leftPaneHeight)
 
 	wtContent := ""
 	selectedIdx := m.selectedIndex[2]
@@ -632,7 +633,7 @@ func (m Model) View() string {
 	if wtContent == "" {
 		wtContent = "No worktrees"
 	}
-	worktreesPane := m.renderPane("Worktrees", wtContent, 2, leftWidth, paneHeight)
+	worktreesPane := m.renderPane("Worktrees", wtContent, 2, leftWidth, leftPaneHeight)
 
 	dumpsContent := ""
 	selectedIdx = m.selectedIndex[4]
@@ -646,7 +647,7 @@ func (m Model) View() string {
 	if dumpsContent == "" {
 		dumpsContent = "No dumps"
 	}
-	dumpsPane := m.renderPane("Dumps", dumpsContent, 4, leftWidth, paneHeight)
+	dumpsPane := m.renderPane("Dumps", dumpsContent, 4, leftWidth, leftPaneHeight)
 
 	dbContent := ""
 	selectedIdx = m.selectedIndex[3]
@@ -664,7 +665,7 @@ func (m Model) View() string {
 	if dbContent == "" {
 		dbContent = "No databases"
 	}
-	dbPane := m.renderPane("Databases", dbContent, 3, rightWidth, m.height-3)
+	dbPane := m.renderPane("Databases", dbContent, 3, rightWidth, rightPaneHeight)
 
 	leftCol := lipgloss.JoinVertical(lipgloss.Top, infoPane, worktreesPane, dumpsPane)
 	mainLayout := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, " ", dbPane)
