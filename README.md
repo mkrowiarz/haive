@@ -10,19 +10,33 @@ A standalone tool for managing Docker Compose-based development projects. Provid
 go install github.com/mkrowiarz/mcp-symfony-stack/cmd/pm@latest
 ```
 
-The binary is installed to `$HOME/go/bin/pm`. Add to PATH:
+This downloads the source and compiles the binary to `$HOME/go/bin/pm`.
+
+**Verify installation:**
+
+```bash
+ls -la ~/go/bin/pm
+```
+
+**Add to PATH** (required if `pm` command not found):
 
 **Bash** (~/.bashrc):
 ```bash
-export PATH="$HOME/go/bin:$PATH"
+echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
 **Fish** (~/.config/fish/config.fish):
 ```fish
-set -gx PATH $HOME/go/bin $PATH
+echo 'set -gx PATH $HOME/go/bin $PATH' >> ~/.config/fish/config.fish
+source ~/.config/fish/config.fish
 ```
 
-Then reload your shell.
+**Verify:**
+
+```bash
+pm
+```
 
 ### Option 2: Build from Source
 
@@ -49,6 +63,15 @@ set -gx PATH $HOME/.local/bin $PATH
 ```
 
 Then reload your shell.
+
+### Private Repository
+
+If the repository is private, configure git to use SSH:
+
+```bash
+git config --global url."git@github.com:".insteadOf "https://github.com/"
+GOPRIVATE=github.com/mkrowiarz/* go install github.com/mkrowiarz/mcp-symfony-stack/cmd/pm@latest
+```
 
 ## Quick Start
 
