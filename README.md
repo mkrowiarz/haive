@@ -4,52 +4,51 @@ A standalone tool for managing Docker Compose-based development projects. Provid
 
 ## Installation
 
-### Build
+### Option 1: Go Install (Recommended)
+
+```bash
+go install github.com/mkrowiarz/mcp-symfony-stack/cmd/pm@latest
+```
+
+The binary is installed to `$HOME/go/bin/pm`. Add to PATH:
+
+**Bash** (~/.bashrc):
+```bash
+export PATH="$HOME/go/bin:$PATH"
+```
+
+**Fish** (~/.config/fish/config.fish):
+```fish
+set -gx PATH $HOME/go/bin $PATH
+```
+
+Then reload your shell.
+
+### Option 2: Build from Source
 
 ```bash
 git clone https://github.com/mkrowiarz/mcp-symfony-stack.git
 cd mcp-symfony-stack
 go build -o pm ./cmd/pm
-```
 
-### Install to PATH
-
-**Option 1: User-local (recommended)**
-
-```bash
+# Install to PATH
 mkdir -p ~/.local/bin
 cp pm ~/.local/bin/
 ```
 
-**Option 2: System-wide**
+Add `~/.local/bin` to PATH:
 
-```bash
-sudo cp pm /usr/local/bin/
-```
-
-### Add to PATH (if needed)
-
-**Bash** (~/.bashrc or ~/.bash_profile):
-
+**Bash** (~/.bashrc):
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
 **Fish** (~/.config/fish/config.fish):
-
 ```fish
 set -gx PATH $HOME/.local/bin $PATH
 ```
 
-Then reload your shell or run:
-
-```bash
-# Bash
-source ~/.bashrc
-
-# Fish
-source ~/.config/fish/config.fish
-```
+Then reload your shell.
 
 ## Quick Start
 
@@ -148,12 +147,14 @@ MCP servers are configured in `.claude/mcp.json` files.
 {
   "mcpServers": {
     "pm": {
-      "command": "/path/to/pm",
+      "command": "pm",
       "args": ["--mcp"]
     }
   }
 }
 ```
+
+If `pm` is not in PATH, use the full path: `"command": "/home/user/go/bin/pm"`.
 
 **Option 2: Project-specific** (/path/to/project/.claude/mcp.json) - only for this project:
 
@@ -161,7 +162,7 @@ MCP servers are configured in `.claude/mcp.json` files.
 {
   "mcpServers": {
     "pm": {
-      "command": "/path/to/pm",
+      "command": "pm",
       "args": ["--mcp"]
     }
   }
