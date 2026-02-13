@@ -137,7 +137,9 @@ Config values support `${VAR_NAME}` syntax, resolved from:
 
 ## MCP Server Setup
 
-Add to Claude Code config (`~/.claude/settings.json` or project `.claude/settings.local.json`):
+MCP servers are configured in `.claude/mcp.json` files.
+
+**Option 1: Global** (~/.claude/mcp.json) - applies to all projects:
 
 ```json
 {
@@ -149,6 +151,23 @@ Add to Claude Code config (`~/.claude/settings.json` or project `.claude/setting
   }
 }
 ```
+
+**Option 2: Project-specific** (/path/to/project/.claude/mcp.json) - only for this project:
+
+```json
+{
+  "mcpServers": {
+    "pm": {
+      "command": "/path/to/pm",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+Project-specific config is loaded in addition to (not instead of) global config.
+
+**Note:** MCP servers are configured in `mcp.json`, not `settings.local.json`. The `settings.local.json` file is for other settings like `approvedCommandPatterns` and permission modes.
 
 ### Available MCP Tools
 
