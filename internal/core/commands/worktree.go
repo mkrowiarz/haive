@@ -14,6 +14,15 @@ import (
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/executor"
 )
 
+// isTerminal checks if stdin is a terminal (not piped or redirected)
+func isTerminal() bool {
+	fileInfo, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return fileInfo.Mode()&os.ModeCharDevice != 0
+}
+
 func List(projectRoot string) ([]types.WorktreeInfo, error) {
 	externalWorktrees, err := executor.GitWorktreeList()
 	if err != nil {
@@ -39,9 +48,26 @@ func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeC
 	}
 
 	if cfg.Worktrees == nil {
-		return nil, &types.CommandError{
-			Code:    types.ErrConfigMissing,
-			Message: "worktrees not configured. Run 'pm worktree create <branch>' first to set up worktrees",
+		// Check if we're in an interactive terminal
+		if !isTerminal() {
+			return nil, &types.CommandError{
+				Code:    types.ErrConfigMissing,
+				Message: "worktrees not configured. Add worktrees.base_path to your config first",
+			}
+		}
+		
+		// For CLI mode: prompt user for worktrees base path
+		basePath, err := promptForWorktreesPath(projectRoot)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Update config with worktrees section
+		cfg.Worktrees = &config.Worktrees{
+			BasePath: basePath,
+		}
+		if err := updateConfigWorktrees(projectRoot, basePath); err != nil {
+			return nil, fmt.Errorf("failed to update config: %w", err)
 		}
 	}
 
