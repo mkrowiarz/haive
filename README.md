@@ -65,6 +65,12 @@ pm init --namespace
 # Write namespaced config directly to .haive/config.json
 pm init --namespace --write
 
+# Switch to a branch with automatic database switching
+pm checkout feature/pf-1234-demo --create
+
+# Just switch database for current branch
+pm switch
+
 # Run interactive TUI
 pm
 
@@ -248,6 +254,43 @@ Press `?` in TUI to see all shortcuts.
 - Default database (from DSN) cannot be dropped
 - `database.allowed` restricts which databases can be operated on (required when database section is present)
 - Path traversal attempts are blocked for worktrees
+
+## CLI Commands
+
+### `pm checkout <branch>` - Switch branch with database
+
+Switches to a git branch and automatically switches to the corresponding database.
+
+```bash
+# Checkout existing branch and its database
+pm checkout feature/my-feature
+
+# Create new branch with new database
+pm checkout feature/new-feature --create
+
+# Create branch and clone data from specific database
+pm checkout feature/demo --create --clone-from=symfony
+```
+
+**Database naming:** Branch `feature/pf-1234-demo` gets database `symfony_feature_pf_1234_demo` (based on your default DB name).
+
+### `pm switch` - Switch database for current branch
+
+Switches the database for your current branch without changing git branches.
+
+```bash
+# Switch to database for current branch
+pm switch
+
+# Switch and clone from specific database
+pm switch --clone-from=symfony
+```
+
+**Automatic behavior:**
+- On `main` or `master`: uses the default database
+- On feature branches: creates/uses `<default_db>_<branch_name>`
+- If database doesn't exist: automatically creates it
+- If feature branch: automatically clones from default database
 
 ## Troubleshooting
 
