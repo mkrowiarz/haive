@@ -40,11 +40,12 @@ func (g *GitExecutor) GitWorktreeList() ([]types.WorktreeInfo, error) {
 func (g *GitExecutor) GitWorktreeAdd(path, branch string, newBranch bool) error {
 	args := []string{"worktree", "add"}
 	if newBranch {
-		args = append(args, "-b", branch)
+		// Create new branch: git worktree add -b <branch> <path>
+		args = append(args, "-b", branch, path)
 	} else {
-		args = append(args, branch)
+		// Use existing branch: git worktree add <path> <branch>
+		args = append(args, path, branch)
 	}
-	args = append(args, path)
 
 	cmd := exec.Command("git", args...)
 	output, err := cmd.CombinedOutput()
