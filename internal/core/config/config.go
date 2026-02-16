@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/dsn"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/types"
@@ -44,65 +43,79 @@ type Worktrees struct {
 // Database operations and worktree commands will be implemented in phase 2
 
 func Load(projectRoot string) (*Config, error) {
-	configPaths := []string{
-		filepath.Join(projectRoot, ".claude", "project.json"),
-		filepath.Join(projectRoot, ".haive", "config.json"),
-		filepath.Join(projectRoot, ".haive.json"),
-	}
+	// Search current directory and parent directories (for worktrees)
+	searchDir := projectRoot
+	for {
+		configPaths := []string{
+			filepath.Join(searchDir, ".claude", "project.json"),
+			filepath.Join(searchDir, ".haive", "config.json"),
+			filepath.Join(searchDir, ".haive.json"),
+		}
 
-	var lastErr error
-	var foundFiles []string
+		var lastErr error
+		var foundFiles []string
 
-	for _, configPath := range configPaths {
-		data, err := os.ReadFile(configPath)
-		if err != nil {
-			if os.IsNotExist(err) {
+		for _, configPath := range configPaths {
+			data, err := os.ReadFile(configPath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					continue
+				}
+				return nil, &types.CommandError{
+					Code:    types.ErrConfigInvalid,
+					Message: fmt.Sprintf("failed to read config file %s: %v", configPath, err),
+				}
+			}
+
+			foundFiles = append(foundFiles, configPath)
+
+			// First, try to parse with namespace (allows sharing .haive.json with other tools)
+			var wrapper struct {
+				PM *Config `json:"pm"`
+			}
+			var cfg Config
+
+			if err := json.Unmarshal(data, &wrapper); err == nil && wrapper.PM != nil && hasPMContent(wrapper.PM) {
+				// Use the found config, but validate with the original projectRoot
+				// so that relative paths in config are resolved from the original directory
+				return validateConfig(wrapper.PM, searchDir)
+			}
+
+			// Fall back to direct config format (for .claude/project.json and legacy configs)
+			if err := json.Unmarshal(data, &cfg); err != nil {
+				// Config file exists but has wrong format - could be for a different tool
+				// Continue to try other config files instead of failing immediately
+				lastErr = &types.CommandError{
+					Code:    types.ErrConfigInvalid,
+					Message: fmt.Sprintf("invalid JSON in config file %s: %v", configPath, err),
+				}
 				continue
 			}
-			return nil, &types.CommandError{
-				Code:    types.ErrConfigInvalid,
-				Message: fmt.Sprintf("failed to read config file %s: %v", configPath, err),
+
+			if !hasPMContent(&cfg) {
+				continue
 			}
+
+			return validateConfig(&cfg, searchDir)
 		}
 
-		foundFiles = append(foundFiles, configPath)
-
-		// First, try to parse with namespace (allows sharing .haive.json with other tools)
-		var wrapper struct {
-			PM *Config `json:"pm"`
-		}
-		var cfg Config
-
-		if err := json.Unmarshal(data, &wrapper); err == nil && wrapper.PM != nil && hasPMContent(wrapper.PM) {
-			return validateConfig(wrapper.PM, projectRoot)
+		if len(foundFiles) > 0 && lastErr != nil {
+			// Found config file(s) but none were valid
+			return nil, lastErr
 		}
 
-		// Fall back to direct config format (for .claude/project.json and legacy configs)
-		if err := json.Unmarshal(data, &cfg); err != nil {
-			// Config file exists but has wrong format - could be for a different tool
-			// Continue to try other config files instead of failing immediately
-			lastErr = &types.CommandError{
-				Code:    types.ErrConfigInvalid,
-				Message: fmt.Sprintf("invalid JSON in config file %s: %v", configPath, err),
-			}
-			continue
+		// Move to parent directory
+		parent := filepath.Dir(searchDir)
+		if parent == searchDir {
+			// Reached root
+			break
 		}
-
-		if !hasPMContent(&cfg) {
-			continue
-		}
-
-		return validateConfig(&cfg, projectRoot)
-	}
-
-	if len(foundFiles) > 0 && lastErr != nil {
-		// Found config file(s) but none were valid
-		return nil, lastErr
+		searchDir = parent
 	}
 
 	return nil, &types.CommandError{
 		Code:    types.ErrConfigMissing,
-		Message: fmt.Sprintf("config file not found (tried %s)", strings.Join(configPaths, ", ")),
+		Message: fmt.Sprintf("config file not found in %s or parent directories", projectRoot),
 	}
 }
 
