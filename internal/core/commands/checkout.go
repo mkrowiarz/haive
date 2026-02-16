@@ -35,15 +35,17 @@ func Checkout(projectRoot, branch string, create bool, cloneFrom string) (*Check
 		// Create new branch
 		cmd := exec.Command("git", "checkout", "-b", branch)
 		cmd.Dir = projectRoot
-		if err := cmd.Run(); err != nil {
-			return nil, fmt.Errorf("failed to create branch: %w", err)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create branch: %w\nOutput: %s", err, string(output))
 		}
 	} else {
 		// Checkout existing branch
 		cmd := exec.Command("git", "checkout", branch)
 		cmd.Dir = projectRoot
-		if err := cmd.Run(); err != nil {
-			return nil, fmt.Errorf("failed to checkout branch: %w", err)
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil, fmt.Errorf("failed to checkout branch: %w\nOutput: %s", err, string(output))
 		}
 	}
 
