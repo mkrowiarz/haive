@@ -38,14 +38,18 @@ func (g *GitExecutor) GitWorktreeList() ([]types.WorktreeInfo, error) {
 }
 
 func (g *GitExecutor) GitWorktreeAdd(path, branch string, newBranch bool) error {
-	args := []string{"worktree", "add", path, branch}
+	args := []string{"worktree", "add"}
 	if newBranch {
-		args = append(args, "-b")
+		args = append(args, "-b", branch)
+	} else {
+		args = append(args, branch)
 	}
+	args = append(args, path)
 
 	cmd := exec.Command("git", args...)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("git worktree add failed: %w", err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git worktree add failed: %w\nOutput: %s", err, string(output))
 	}
 
 	return nil
