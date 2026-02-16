@@ -35,6 +35,13 @@ func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeC
 		return nil, err
 	}
 
+	if cfg.Worktrees == nil {
+		return nil, &types.CommandError{
+			Code:    types.ErrConfigMissing,
+			Message: "worktrees configuration is required for worktree operations",
+		}
+	}
+
 	if err := pmcore.ValidateBranchName(branch); err != nil {
 		return nil, err
 	}
@@ -64,6 +71,13 @@ func Remove(projectRoot string, branch string) (*types.WorktreeRemoveResult, err
 	cfg, err := config.Load(projectRoot)
 	if err != nil {
 		return nil, err
+	}
+
+	if cfg.Worktrees == nil {
+		return nil, &types.CommandError{
+			Code:    types.ErrConfigMissing,
+			Message: "worktrees configuration is required for worktree operations",
+		}
 	}
 
 	if err := pmcore.ValidateBranchName(branch); err != nil {
