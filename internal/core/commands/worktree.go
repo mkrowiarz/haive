@@ -201,5 +201,46 @@ func updateConfigWorktrees(projectRoot, basePath string) error {
 	}
 	
 	fmt.Printf("✓ Updated %s with worktrees configuration\n", configPath)
+	
+	// Add to .gitignore if path is inside project root
+	if strings.HasPrefix(basePath, projectRoot) || !filepath.IsAbs(basePath) {
+		relPath, _ := filepath.Rel(projectRoot, basePath)
+		if relPath == "" {
+			relPath = basePath
+		}
+		if err := addToGitignore(projectRoot, relPath); err == nil {
+			fmt.Printf("✓ Added %s to .gitignore\n", relPath)
+		}
+	}
+	
 	return nil
+}
+
+func addToGitignore(projectRoot, path string) error {
+	gitignorePath := filepath.Join(projectRoot, ".gitignore")
+	
+	// Normalize path for .gitignore (use forward slashes)
+	path = strings.ReplaceAll(path, "\\", "/")
+	
+	// Read existing .gitignore if it exists
+	content := ""
+	if data, err := os.ReadFile(gitignorePath); err == nil {
+		content = string(data)
+		// Check if already present
+		lines := strings.Split(content, "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == path || line == "/"+path || line == path+"/" {
+				return nil // Already present
+			}
+		}
+	}
+	
+	// Add new line
+	if content != "" && !strings.HasSuffix(content, "\n") {
+		content += "\n"
+	}
+	content += "# Worktrees directory\n" + path + "/\n"
+	
+	return os.WriteFile(gitignorePath, []byte(content), 0644)
 }
