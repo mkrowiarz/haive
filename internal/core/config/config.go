@@ -15,6 +15,9 @@ type Config struct {
 	Docker    *Docker    `json:"docker"`
 	Database  *Database  `json:"database,omitempty"`
 	Worktrees *Worktrees `json:"worktrees,omitempty"`
+	// ProjectRoot is the directory where the config file was found
+	// Used to resolve relative paths (e.g., docker-compose files)
+	ProjectRoot string `json:"-"`
 }
 
 type Project struct {
@@ -84,8 +87,8 @@ func Load(projectRoot string) (*Config, error) {
 			var cfg Config
 
 			if err := json.Unmarshal(data, &wrapper); err == nil && wrapper.PM != nil && hasPMContent(wrapper.PM) {
-				// Use the found config, but validate with the original projectRoot
-				// so that relative paths in config are resolved from the original directory
+				// Set the project root where config was found
+				wrapper.PM.ProjectRoot = searchDir
 				return validateConfig(wrapper.PM, searchDir)
 			}
 
@@ -104,6 +107,8 @@ func Load(projectRoot string) (*Config, error) {
 				continue
 			}
 
+			// Set the project root where config was found
+			cfg.ProjectRoot = searchDir
 			return validateConfig(&cfg, searchDir)
 		}
 

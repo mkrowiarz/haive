@@ -69,6 +69,12 @@ func Switch(projectRoot string, cloneFrom string) (*SwitchResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	
+	// For docker operations, use the config's project root (handles worktrees)
+	dockerRoot := projectRoot
+	if cfg.ProjectRoot != "" {
+		dockerRoot = cfg.ProjectRoot
+	}
 
 	if cfg.Database == nil {
 		return nil, &types.CommandError{
@@ -94,8 +100,8 @@ func Switch(projectRoot string, cloneFrom string) (*SwitchResult, error) {
 	// Generate branch-specific database name
 	branchDB := generateBranchDBName(defaultDB, branch)
 
-	// Check if database exists
-	dbExists, err := databaseExists(cfg, projectRoot, branchDB)
+	// Check if database exists (use dockerRoot for docker operations)
+	dbExists, err := databaseExists(cfg, dockerRoot, branchDB)
 	if err != nil {
 		return nil, err
 	}
@@ -107,20 +113,20 @@ func Switch(projectRoot string, cloneFrom string) (*SwitchResult, error) {
 
 	// Create database if it doesn't exist
 	if !dbExists {
-		if err := createBranchDB(cfg, projectRoot, branchDB); err != nil {
+		if err := createBranchDB(cfg, dockerRoot, branchDB); err != nil {
 			return nil, err
 		}
 		result.Created = true
 
 		// Clone data if requested
 		if cloneFrom != "" {
-			if err := cloneDatabaseData(cfg, projectRoot, cloneFrom, branchDB); err != nil {
+			if err := cloneDatabaseData(cfg, dockerRoot, cloneFrom, branchDB); err != nil {
 				return nil, err
 			}
 			result.Cloned = true
 		} else if branch != "main" && branch != "master" {
 			// Auto-clone from default db for feature branches
-			if err := cloneDatabaseData(cfg, projectRoot, defaultDB, branchDB); err != nil {
+			if err := cloneDatabaseData(cfg, dockerRoot, defaultDB, branchDB); err != nil {
 				return nil, err
 			}
 			result.Cloned = true
