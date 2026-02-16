@@ -316,6 +316,70 @@ pm wt rm feature/my-feature
 
 **Note:** Worktree commands require the `worktrees` section in your config.
 
+### `pm serve` - Run app container for worktrees
+
+Start and stop the app container for a worktree with isolated dependencies. Designed for OrbStack environments where each container gets automatic DNS (`.orb.local`).
+
+```bash
+# From within a worktree directory
+cd .worktrees/feature-my-feature
+
+# Start the app container
+pm serve
+
+# Stop the app container
+pm serve stop
+```
+
+**How it works:**
+1. Detects you're in a worktree (checks `.git` file format)
+2. Looks for `compose.worktree.yaml` in the worktree root
+3. Starts container with unique project name: `<project>-wt-<branch>`
+4. Returns OrbStack hostname: `<project>-wt-<branch>-app.orb.local`
+
+**Setup: Create `compose.worktree.yaml` in each worktree**
+
+This file customizes how the app runs for this specific worktree:
+
+```yaml
+services:
+  app:
+    # No port mapping - OrbStack provides automatic hostname
+    ports: []
+
+    # Isolate dependencies from other worktrees/main
+    volumes:
+      - .:/app:delegated
+      - /app/var/cache       # Isolated cache
+      - /app/vendor          # Isolated vendor/
+      - /app/node_modules    # Isolated node_modules (optional)
+      - ~/.composer/auth.json:/root/.config/composer/auth.json
+
+    # Override environment for this worktree
+    environment:
+      # Example: Use worktree-specific database
+      DATABASE_URL: "mysql://user:pass@db:3306/myapp_wt_feature_x"
+      TZ: 'Europe/Berlin'
+
+# Connect to shared services (db, redis, etc.) from main project
+networks:
+  pf-network:
+    external: true
+    name: professionfit-symfony_pf-network
+  local:
+    external: true
+    name: professionfit-symfony_local
+```
+
+**Network names:** Update `professionfit-symfony` to match your main project's Docker Compose project name. Check with: `docker network ls`
+
+**Dependencies:** Run `composer install` and `npm install` in the worktree before starting the container. The isolated volumes ensure each worktree has its own dependencies.
+
+**Why separate dependencies?**
+- Branches may require different package versions
+- Prevents conflicts between worktrees
+- Avoids breaking main project when testing experimental packages
+
 ## Troubleshooting
 
 ### "Dump failed" or "Import failed" errors

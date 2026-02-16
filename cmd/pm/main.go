@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/commands"
+	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/types"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/mcp"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/tui"
 )
@@ -53,6 +54,9 @@ func main() {
 			return
 		case "worktree", "wt":
 			handleWorktree(args[1:])
+			return
+		case "serve":
+			handleServe(args[1:])
 			return
 		case "help", "--help", "-h":
 			printHelp()
@@ -113,6 +117,10 @@ func printHelp() {
 	fmt.Println(bold + "Worktree Flags:" + reset)
 	fmt.Println("  " + magenta + "--new-branch, -n" + reset + "      Create new branch (with create)")
 	fmt.Println()
+	fmt.Println(bold + "Serve Commands:" + reset)
+	fmt.Println("  " + yellow + "serve" + reset + "                  Start app container for current worktree")
+	fmt.Println("  " + yellow + "serve stop" + reset + "             Stop app container for current worktree")
+	fmt.Println()
 	fmt.Println(bold + "Examples:" + reset)
 	fmt.Println("  " + green + "pm init --write" + reset + "                    # Create config file")
 	fmt.Println("  " + green + "pm init --namespace --write" + reset + "        # Create namespaced config")
@@ -122,6 +130,8 @@ func printHelp() {
 	fmt.Println("  " + green + "pm worktree list" + reset + "                   # List worktrees")
 	fmt.Println("  " + green + "pm worktree create feature/x" + reset + "       # Create worktree")
 	fmt.Println("  " + green + "pm worktree remove feature/x" + reset + "       # Remove worktree")
+	fmt.Println("  " + green + "pm serve" + reset + "                            # Start worktree app")
+	fmt.Println("  " + green + "pm serve stop" + reset + "                       # Stop worktree app")
 	fmt.Println()
 	fmt.Println(green + "Config file locations" + reset + " (checked in order):")
 	fmt.Println("  1. " + bold + ".claude/project.json" + reset + " (recommended)")
@@ -345,4 +355,80 @@ func handleWorktree(args []string) {
 		fmt.Fprintf(os.Stderr, "Usage: pm worktree <list|create|remove> [options]\n")
 		os.Exit(1)
 	}
+}
+
+func handleServe(args []string) {
+	// ANSI color codes
+	var (
+		reset  = "\033[0m"
+		red    = "\033[31m"
+		green  = "\033[32m"
+		yellow = "\033[33m"
+		cyan   = "\033[36m"
+		dim    = "\033[2m"
+	)
+
+	// Check if it's a stop command
+	if len(args) > 0 && args[0] == "stop" {
+		if err := commands.Stop("."); err != nil {
+			fmt.Println()
+			fmt.Printf("%s✗ Error:%s %v\n", red, reset, err)
+			fmt.Println()
+			os.Exit(1)
+		}
+
+		fmt.Printf("%s✓%s Stopped worktree app container\n", green, reset)
+		return
+	}
+
+	// Start the worktree app container
+	result, err := commands.Serve(".")
+	if err != nil {
+		// Check if it's a missing config error
+		if cmdErr, ok := err.(*types.CommandError); ok {
+			fmt.Println()
+			fmt.Printf("%s✗ %s%s\n", red, cmdErr.Message, reset)
+			fmt.Println()
+
+			if cmdErr.Code == types.ErrConfigMissing && strings.Contains(cmdErr.Message, "compose.worktree.yaml") {
+				fmt.Printf("%sSetup Instructions:%s\n", cyan, reset)
+				fmt.Println()
+				fmt.Println("1. Create " + yellow + "compose.worktree.yaml" + reset + " in your worktree root:")
+				fmt.Println()
+				fmt.Println(dim + "   services:" + reset)
+				fmt.Println(dim + "     app:" + reset)
+				fmt.Println(dim + "       ports: []  # OrbStack provides hostname" + reset)
+				fmt.Println(dim + "       volumes:" + reset)
+				fmt.Println(dim + "         - .:/app:delegated" + reset)
+				fmt.Println(dim + "         - /app/var/cache" + reset)
+				fmt.Println(dim + "         - /app/vendor" + reset)
+				fmt.Println(dim + "       environment:" + reset)
+				fmt.Println(dim + "         DATABASE_URL: \"mysql://user:pass@db:3306/mydb_wt_branch\"" + reset)
+				fmt.Println(dim + "   networks:" + reset)
+				fmt.Println(dim + "     local:" + reset)
+				fmt.Println(dim + "       external: true" + reset)
+				fmt.Println(dim + "       name: myproject_local" + reset)
+				fmt.Println()
+				fmt.Println("2. Run " + green + "composer install" + reset + " && " + green + "npm install" + reset + " in the worktree")
+				fmt.Println()
+				fmt.Println("3. Run " + green + "pm serve" + reset + " to start the container")
+				fmt.Println()
+				fmt.Printf("%sFor complete template:%s See README.md\n", dim, reset)
+				fmt.Println()
+			}
+
+			os.Exit(1)
+		}
+
+		// Generic error
+		fmt.Println()
+		fmt.Printf("%s✗ Error:%s %v\n", red, reset, err)
+		fmt.Println()
+		os.Exit(1)
+	}
+
+	fmt.Printf("%s✓%s Worktree: %s\n", green, reset, result.Branch)
+	fmt.Printf("%s✓%s Project: %s\n", green, reset, result.ProjectName)
+	fmt.Printf("%s✓%s Started: app container\n", green, reset)
+	fmt.Printf("%s✓%s URL: %s%s%s\n", green, reset, cyan, result.URL, reset)
 }

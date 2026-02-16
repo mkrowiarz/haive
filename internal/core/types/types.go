@@ -5,13 +5,15 @@ import "time"
 type ErrCode string
 
 const (
-	ErrConfigMissing ErrCode = "CONFIG_MISSING"
-	ErrConfigInvalid ErrCode = "CONFIG_INVALID"
-	ErrInvalidName   ErrCode = "INVALID_NAME"
-	ErrPathTraversal ErrCode = "PATH_TRAVERSAL"
-	ErrDbNotAllowed  ErrCode = "DB_NOT_ALLOWED"
-	ErrDbIsDefault   ErrCode = "DB_IS_DEFAULT"
-	ErrFileNotFound  ErrCode = "FILE_NOT_FOUND"
+	ErrConfigMissing     ErrCode = "CONFIG_MISSING"
+	ErrConfigInvalid     ErrCode = "CONFIG_INVALID"
+	ErrInvalidName       ErrCode = "INVALID_NAME"
+	ErrPathTraversal     ErrCode = "PATH_TRAVERSAL"
+	ErrDbNotAllowed      ErrCode = "DB_NOT_ALLOWED"
+	ErrDbIsDefault       ErrCode = "DB_IS_DEFAULT"
+	ErrFileNotFound      ErrCode = "FILE_NOT_FOUND"
+	ErrInvalidWorktree   ErrCode = "INVALID_WORKTREE"
+	ErrDependenciesMissing ErrCode = "DEPENDENCIES_MISSING"
 )
 
 type CommandError struct {
@@ -66,6 +68,7 @@ type Project struct {
 
 type Docker struct {
 	ComposeFiles []string `json:"compose_files,omitempty"`
+	ProjectName  string   `json:"project_name,omitempty"`
 }
 
 type Database struct {
@@ -73,6 +76,7 @@ type Database struct {
 	DSN       string   `json:"dsn"`
 	Allowed   []string `json:"allowed"`
 	DumpsPath string   `json:"dumps_path,omitempty"`
+	Prefix    string   `json:"prefix,omitempty"`
 }
 
 type Worktrees struct {

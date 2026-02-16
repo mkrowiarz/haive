@@ -27,6 +27,7 @@ type Project struct {
 
 type Docker struct {
 	ComposeFiles []string `json:"compose_files,omitempty"`
+	ProjectName  string   `json:"project_name,omitempty"`
 }
 
 type Database struct {
@@ -34,6 +35,7 @@ type Database struct {
 	DSN       string   `json:"dsn"`
 	Allowed   []string `json:"allowed"`
 	DumpsPath string   `json:"dumps_path,omitempty"`
+	Prefix    string   `json:"prefix,omitempty"`
 }
 
 type Worktrees struct {
