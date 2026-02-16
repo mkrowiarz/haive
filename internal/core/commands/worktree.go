@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	pmcore "github.com/mkrowiarz/mcp-symfony-stack/internal/core"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/config"
@@ -36,9 +39,18 @@ func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeC
 	}
 
 	if cfg.Worktrees == nil {
-		return nil, &types.CommandError{
-			Code:    types.ErrConfigMissing,
-			Message: "worktrees configuration is required for worktree operations",
+		// Prompt user for worktrees base path
+		basePath, err := promptForWorktreesPath(projectRoot)
+		if err != nil {
+			return nil, err
+		}
+		
+		// Update config with worktrees section
+		cfg.Worktrees = &config.Worktrees{
+			BasePath: basePath,
+		}
+		if err := updateConfigWorktrees(projectRoot, basePath); err != nil {
+			return nil, fmt.Errorf("failed to update config: %w", err)
 		}
 	}
 
@@ -98,4 +110,96 @@ func Remove(projectRoot string, branch string) (*types.WorktreeRemoveResult, err
 	return &types.WorktreeRemoveResult{
 		Path: worktreePath,
 	}, nil
+}
+
+func promptForWorktreesPath(projectRoot string) (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	
+	fmt.Println()
+	fmt.Println("Worktrees configuration not found.")
+	fmt.Println()
+	fmt.Println("Worktrees allow you to work on multiple branches simultaneously")
+	fmt.Println("by checking them out into separate directories.")
+	fmt.Println()
+	fmt.Printf("Where would you like to store worktrees? (default: ../worktrees): ")
+	
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return "", fmt.Errorf("failed to read input: %w", err)
+	}
+	
+	input = strings.TrimSpace(input)
+	if input == "" {
+		input = "../worktrees"
+	}
+	
+	// Make it relative to project root if not absolute
+	if !filepath.IsAbs(input) {
+		input = filepath.Join(projectRoot, input)
+	}
+	
+	// Clean up the path
+	input = filepath.Clean(input)
+	
+	return input, nil
+}
+
+func updateConfigWorktrees(projectRoot, basePath string) error {
+	// Find the config file
+	configPaths := []string{
+		filepath.Join(projectRoot, ".claude", "project.json"),
+		filepath.Join(projectRoot, ".haive", "config.json"),
+		filepath.Join(projectRoot, ".haive.json"),
+	}
+	
+	var configPath string
+	for _, path := range configPaths {
+		if _, err := os.Stat(path); err == nil {
+			configPath = path
+			break
+		}
+	}
+	
+	if configPath == "" {
+		return fmt.Errorf("no config file found")
+	}
+	
+	// Read existing config
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read config: %w", err)
+	}
+	
+	// Parse config
+	var cfg map[string]interface{}
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("failed to parse config: %w", err)
+	}
+	
+	// Check if it's namespaced
+	if pmConfig, ok := cfg["pm"].(map[string]interface{}); ok {
+		// Update namespaced config
+		pmConfig["worktrees"] = map[string]string{
+			"base_path": basePath,
+		}
+		cfg["pm"] = pmConfig
+	} else {
+		// Update direct config
+		cfg["worktrees"] = map[string]string{
+			"base_path": basePath,
+		}
+	}
+	
+	// Write back
+	data, err = json.MarshalIndent(cfg, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+	
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write config: %w", err)
+	}
+	
+	fmt.Printf("✓ Updated %s with worktrees configuration\n", configPath)
+	return nil
 }
