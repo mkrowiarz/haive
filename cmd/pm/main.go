@@ -14,6 +14,19 @@ import (
 )
 
 func main() {
+	// Check for help before flag parsing
+	for _, arg := range os.Args[1:] {
+		if arg == "--help" || arg == "-h" {
+			// Check if it's a command help request
+			if len(os.Args) > 2 {
+				// pm <command> --help
+				break // Let command handlers deal with it
+			}
+			printHelp()
+			return
+		}
+	}
+
 	mcpFlag := flag.Bool("mcp", false, "Run as MCP server (stdio transport)")
 	flag.Parse()
 
@@ -37,6 +50,9 @@ func main() {
 		case "switch":
 			handleSwitch(args[1:])
 			return
+		case "help", "--help", "-h":
+			printHelp()
+			return
 		}
 	}
 
@@ -44,6 +60,48 @@ func main() {
 		fmt.Fprintf(os.Stderr, "TUI error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func printHelp() {
+	help := `pm - Project Manager for Docker Compose-based development
+
+Usage:
+  pm                    Run interactive TUI (default)
+  pm --mcp              Run as MCP server for Claude Code
+  pm <command> [flags]  Run specific command
+
+Commands:
+  init                  Generate config for current project
+  checkout <branch>     Switch git branch and database
+  switch                Switch database for current branch
+  help                  Show this help message
+
+Init Flags:
+  --write, -w           Write config to .haive/config.json
+  --namespace, -n       Wrap config in "pm" namespace
+
+Checkout Flags:
+  --create, -c          Create new branch
+  --clone-from=<db>     Clone data from specified database
+
+Switch Flags:
+  --clone-from=<db>     Clone data from specified database
+
+Examples:
+  pm init --write                    # Create config file
+  pm init --namespace --write        # Create namespaced config
+  pm checkout feature/x --create     # Create branch with new db
+  pm checkout main                   # Switch to main branch+db
+  pm switch                          # Switch db for current branch
+
+Config file locations (checked in order):
+  1. .claude/project.json (recommended)
+  2. .haive/config.json
+  3. .haive.json
+
+For more information: https://github.com/mkrowiarz/mcp-symfony-stack
+`
+	fmt.Println(help)
 }
 
 func wrapInNamespace(config string) string {
