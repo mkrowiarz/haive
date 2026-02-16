@@ -39,18 +39,9 @@ func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeC
 	}
 
 	if cfg.Worktrees == nil {
-		// Prompt user for worktrees base path
-		basePath, err := promptForWorktreesPath(projectRoot)
-		if err != nil {
-			return nil, err
-		}
-		
-		// Update config with worktrees section
-		cfg.Worktrees = &config.Worktrees{
-			BasePath: basePath,
-		}
-		if err := updateConfigWorktrees(projectRoot, basePath); err != nil {
-			return nil, fmt.Errorf("failed to update config: %w", err)
+		return nil, &types.CommandError{
+			Code:    types.ErrConfigMissing,
+			Message: "worktrees not configured. Run 'pm worktree create <branch>' first to set up worktrees",
 		}
 	}
 
