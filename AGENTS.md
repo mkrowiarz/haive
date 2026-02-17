@@ -136,6 +136,71 @@ go mod verify
 - Parse DSN using `net/url` package
 - Mask credentials in logs and TUI display
 
+### Config Formats (TOML/YAML/JSON)
+
+Haive supports multiple config formats (searched in priority order):
+
+1. `haive.toml` (TOML - recommended)
+2. `.haive/config.toml`
+3. `haive.yaml` (YAML)
+4. `.haive/config.yaml`
+5. `haive.json` (JSON)
+6. `.haive/config.json`
+7. `.claude/project.json` (JSON, legacy)
+
+**TOML Example:**
+```toml
+[project]
+name = "my-project"
+
+[docker]
+compose_files = ["compose.yaml"]
+
+[worktree]
+base_path = ".worktrees"
+
+[worktree.copy]
+include = [".env.local", "config/**/*.yaml"]
+exclude = ["vendor/", "node_modules/"]
+
+[worktree.hooks]
+postCreate = ["composer install", "npm install"]
+preRemove = ["./scripts/cleanup.sh"]
+
+[worktree.env]
+file = ".env.local"
+var_name = "DATABASE_URL"
+
+[database]
+service = "database"
+dsn = "mysql://user:pass@db:3306/myapp"
+allowed = ["myapp", "myapp_*"]
+
+[database.hooks]
+postClone = ["./scripts/seed.sh"]
+preDrop = ["./scripts/backup.sh"]
+```
+
+### Worktree Features
+
+**File Copy Patterns:**
+- Uses glob patterns with `**` support (via doublestar)
+- `include`: Files to copy when creating worktree
+- `exclude`: Patterns to skip even if matched by include
+
+**Hooks:**
+- Worktree hooks run with environment variables:
+  - `REPO_ROOT`, `PROJECT_NAME`
+  - `WORKTREE_PATH`, `WORKTREE_NAME`, `BRANCH`
+- Database hooks receive:
+  - `DATABASE_NAME`, `DATABASE_URL`
+  - `SOURCE_DATABASE`, `TARGET_DATABASE` (for clone)
+- Pre-hooks stop on failure, post-hooks log warnings
+
+**Database Per Worktree:**
+- `worktree.env` updates `.env.local` with worktree-specific database
+- Git config `haive.database` tracks which DB a worktree uses
+
 ### Safety & Guards
 
 - Check `allowed` patterns before any database operation
