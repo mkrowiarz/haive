@@ -49,13 +49,12 @@ allowed = ["test", "test_*"]
 func TestLoader_Load_Priority(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create both TOML and JSON configs
-	tomlContent := `[project]
-name = "toml-project"`
-	jsonContent := `{"project": {"name": "json-project"}}`
-
-	os.WriteFile(filepath.Join(tmpDir, "haive.toml"), []byte(tomlContent), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "haive.json"), []byte(jsonContent), 0644)
+	// Create config in .haive/config.toml
+	os.MkdirAll(filepath.Join(tmpDir, ".haive"), 0755)
+	os.WriteFile(filepath.Join(tmpDir, ".haive", "config.toml"), []byte(`
+[project]
+name = "nested-config"
+`), 0644)
 
 	loader := NewLoader()
 	cfg, err := loader.Load(tmpDir)
@@ -64,9 +63,8 @@ name = "toml-project"`
 		t.Fatal(err)
 	}
 
-	// TOML should take priority
-	if cfg.Project.Name != "toml-project" {
-		t.Errorf("expected TOML config to win, got: %s", cfg.Project.Name)
+	if cfg.Project.Name != "nested-config" {
+		t.Errorf("expected 'nested-config', got: %s", cfg.Project.Name)
 	}
 }
 
@@ -78,31 +76,6 @@ func TestLoader_Load_NotFound(t *testing.T) {
 
 	if err == nil {
 		t.Error("expected error for missing config")
-	}
-}
-
-func TestLoader_Load_NamespacedJSON(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	configContent := `{
-		"pm": {
-			"project": {"name": "namespaced"},
-			"docker": {"compose_files": ["docker-compose.yaml"]}
-		}
-	}`
-
-	os.MkdirAll(filepath.Join(tmpDir, ".claude"), 0755)
-	os.WriteFile(filepath.Join(tmpDir, ".claude", "project.json"), []byte(configContent), 0644)
-
-	loader := NewLoader()
-	cfg, err := loader.Load(tmpDir)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if cfg.Project.Name != "namespaced" {
-		t.Errorf("expected 'namespaced', got '%s'", cfg.Project.Name)
 	}
 }
 

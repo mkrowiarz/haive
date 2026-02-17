@@ -56,14 +56,8 @@ mkdir -p ~/.local/bin && mv haive ~/.local/bin/
 cd /path/to/your/project
 haive init
 
-# Write config directly to .haive/config.json
+# Write config directly to .haive/config.toml
 haive init --write
-
-# Output with "haive" namespace (for adding to existing .haive.json)
-haive init --namespace
-
-# Write namespaced config directly to .haive/config.json
-haive init --namespace --write
 
 # Switch to a branch with automatic database switching
 haive checkout feature/pf-1234-demo --create
@@ -80,17 +74,12 @@ haive --mcp
 
 ## Configuration
 
-Haive supports TOML (recommended), YAML, and JSON config formats. Config files are searched in priority order:
+Haive uses TOML configuration files. Searched in order:
 
-1. `haive.toml` (TOML - recommended)
+1. `haive.toml`
 2. `.haive/config.toml`
-3. `haive.yaml` (YAML)
-4. `.haive/config.yaml`
-5. `haive.json` (JSON)
-6. `.haive/config.json`
-7. `.claude/project.json` (JSON, legacy)
 
-### Minimal Config (TOML)
+### Minimal Config
 
 ```toml
 [project]
@@ -101,27 +90,12 @@ preset = "symfony"
 compose_files = ["docker-compose.yaml"]
 ```
 
-### Minimal Config (JSON - Legacy)
-
-```json
-{
-  "$schema": "https://raw.githubusercontent.com/mkrowiarz/mcp-symfony-stack/main/schema.json",
-  "project": {
-    "name": "my-project",
-    "preset": "symfony"
-  },
-  "docker": {
-    "compose_files": ["docker-compose.yaml"]
-  }
-}
-```
-
-### Full Config with Database and Worktrees (TOML)
+### Full Config with Database and Worktrees
 
 ```toml
 [project]
 name = "my-project"
-type = "symfony"
+preset = "symfony"
 
 [docker]
 compose_files = [
@@ -158,31 +132,6 @@ var_name = "DATABASE_URL"
 ```
 
 **Note:** `database.allowed` is required when the database section is present. Use glob patterns like `["app", "app_*"]` to specify which databases can be operated on.
-
-### Shared Config with Other Tools
-
-If you use `.haive.json` for multiple tools, you can namespace the `haive` config:
-
-```json
-{
-  "project": "other-tool-config",
-  "agents": ["claude"],
-  "haive": {
-    "project": {
-      "name": "my-project",
-      "preset": "symfony"
-    },
-    "docker": {
-      "compose_files": ["docker-compose.yaml"]
-    },
-    "database": {
-      "service": "db",
-      "dsn": "${DATABASE_URL}",
-      "allowed": ["myapp", "myapp_*"]
-    }
-  }
-}
-```
 
 ## Worktree Features
 
@@ -510,25 +459,17 @@ If you see errors mentioning `mysqldump: [Warning] Using a password...`, this is
 
 ### Config not found
 
-The tool searches for config in priority order. TOML is recommended:
-1. `haive.toml` (recommended)
+Haive searches for TOML config files in order:
+1. `haive.toml`
 2. `.haive/config.toml`
-3. `haive.yaml`
-4. `.haive/config.yaml`
-5. `haive.json`
-6. `.haive/config.json`
-7. `.claude/project.json` (legacy)
-
-If you have an existing `.haive.json` with other tool configs, add the `haive` namespace (see [Shared Config with Other Tools](#shared-config-with-other-tools) above).
 
 ### Database operations fail with "not in allowed list"
 
 The `database.allowed` field is required when the database section is present. It specifies which databases can be operated on for safety:
 
-```json
-"database": {
-  "allowed": ["myapp", "myapp_*"]
-}
+```toml
+[database]
+allowed = ["myapp", "myapp_*"]
 ```
 
 ## Supported Databases

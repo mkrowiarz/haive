@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"net/url"
 	"os"
@@ -284,26 +285,35 @@ func detectEnvVars(projectRoot string) ([]string, error) {
 }
 
 func generateSuggestedConfig(projectName, projectType string, composeFiles []string, dbService, dbName string) string {
-	cfg := map[string]interface{}{
-		"$schema": "https://raw.githubusercontent.com/mkrowiarz/mcp-symfony-stack/main/schema.json",
-		"project": map[string]string{
-			"name": projectName,
-			"type": projectType,
-		},
-		"docker": map[string]interface{}{
-			"compose_files": composeFiles,
-		},
+	var b strings.Builder
+
+	b.WriteString("[project]\n")
+	b.WriteString(fmt.Sprintf("name = %q\n", projectName))
+	b.WriteString(fmt.Sprintf("preset = %q\n", projectType))
+	b.WriteString("\n")
+
+	b.WriteString("[docker]\n")
+	if len(composeFiles) == 0 {
+		b.WriteString("compose_files = []\n")
+	} else {
+		b.WriteString("compose_files = [\n")
+		for i, f := range composeFiles {
+			if i > 0 {
+				b.WriteString(",\n")
+			}
+			b.WriteString(fmt.Sprintf("  %q", f))
+		}
+		b.WriteString("\n]\n")
 	}
 
 	if dbService != "" && dbName != "" {
-		cfg["database"] = map[string]interface{}{
-			"service":    dbService,
-			"dsn":        "${DATABASE_URL}",
-			"allowed":    []string{dbName, dbName + "_*"},
-			"dumps_path": "var/dumps",
-		}
+		b.WriteString("\n")
+		b.WriteString("[database]\n")
+		b.WriteString(fmt.Sprintf("service = %q\n", dbService))
+		b.WriteString("dsn = \"${DATABASE_URL}\"\n")
+		b.WriteString(fmt.Sprintf("allowed = [%q, %q]\n", dbName, dbName+"_*"))
+		b.WriteString("dumps_path = \"var/dumps\"\n")
 	}
 
-	data, _ := json.MarshalIndent(cfg, "", "  ")
-	return string(data)
+	return b.String()
 }

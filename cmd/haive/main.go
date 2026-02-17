@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -99,8 +98,7 @@ func printHelp() {
 	fmt.Println("  " + yellow + "help" + reset + "                  Show this help message")
 	fmt.Println()
 	fmt.Println(bold + "Init Flags:" + reset)
-	fmt.Println("  " + magenta + "--write, -w" + reset + "           Write config to .haive/config.json")
-	fmt.Println("  " + magenta + "--namespace, -n" + reset + "       Wrap config in \"haive\" namespace")
+	fmt.Println("  " + magenta + "--write, -w" + reset + "           Write config to .haive/config.toml")
 	fmt.Println()
 	fmt.Println(bold + "Checkout Flags:" + reset)
 	fmt.Println("  " + magenta + "--create, -c" + reset + "          Create new branch")
@@ -133,42 +131,20 @@ func printHelp() {
 	fmt.Println("  " + green + "haive serve" + reset + "                         # Start worktree app")
 	fmt.Println("  " + green + "haive serve stop" + reset + "                      # Stop worktree app")
 	fmt.Println()
-	fmt.Println(green + "Config file locations" + reset + " (checked in order):")
-	fmt.Println("  1. " + bold + ".claude/project.json" + reset + " (recommended)")
-	fmt.Println("  2. " + gray + ".haive/config.json" + reset)
-	fmt.Println("  3. " + gray + ".haive.json" + reset)
+	fmt.Println(green + "Config file" + reset + " (searched in order):")
+	fmt.Println("  1. " + bold + "haive.toml" + reset)
+	fmt.Println("  2. " + gray + ".haive/config.toml" + reset)
 	fmt.Println()
 	fmt.Println(dim + "For more information:" + reset + " https://github.com/mkrowiarz/mcp-symfony-stack")
 	fmt.Println()
 }
 
-func wrapInNamespace(config string) string {
-	var cfg map[string]interface{}
-	if err := json.Unmarshal([]byte(config), &cfg); err != nil {
-		return config
-	}
-
-	wrapper := map[string]interface{}{
-		"pm": cfg,
-	}
-
-	data, err := json.MarshalIndent(wrapper, "", "  ")
-	if err != nil {
-		return config
-	}
-
-	return string(data)
-}
 
 func handleInit(args []string) {
 	writeFlag := false
-	namespaceFlag := false
 	for _, arg := range args {
 		if arg == "--write" || arg == "-w" {
 			writeFlag = true
-		}
-		if arg == "--namespace" || arg == "-n" {
-			namespaceFlag = true
 		}
 	}
 
@@ -179,13 +155,10 @@ func handleInit(args []string) {
 	}
 
 	config := result.SuggestedConfig
-	if namespaceFlag {
-		config = wrapInNamespace(config)
-	}
 
 	if writeFlag {
 		configDir := ".haive"
-		configPath := filepath.Join(configDir, "config.json")
+		configPath := filepath.Join(configDir, "config.toml")
 
 		if _, err := os.Stat(configPath); err == nil {
 			fmt.Fprintf(os.Stderr, "Config file already exists: %s\n", configPath)
