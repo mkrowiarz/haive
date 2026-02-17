@@ -1,4 +1,4 @@
-# pm - Project Manager
+# haive - Development Environment Manager
 
 A standalone tool for managing Docker Compose-based development projects. Provides TUI, MCP server, and CLI interfaces for database operations and git worktree management.
 
@@ -12,7 +12,7 @@ cd mcp-symfony-stack
 make install
 ```
 
-Binary is installed to `$HOME/go/bin/pm`. Add to PATH if needed:
+Binary is installed to `$HOME/go/bin/haive`. Add to PATH if needed:
 
 **Bash**: `export PATH="$HOME/go/bin:$PATH"`
 
@@ -26,27 +26,27 @@ cd mcp-symfony-stack
 make install-local
 ```
 
-Binary is installed to `~/.local/bin/pm`. Make sure `~/.local/bin` is in your PATH.
+Binary is installed to `~/.local/bin/haive`. Make sure `~/.local/bin` is in your PATH.
 
 ### Option 3: Install Latest Release
 
 ```bash
-go install github.com/mkrowiarz/mcp-symfony-stack/cmd/pm@latest
+go install github.com/mkrowiarz/mcp-symfony-stack/cmd/haive@latest
 ```
 
-Binary is installed to `$HOME/go/bin/pm`.
+Binary is installed to `$HOME/go/bin/haive`.
 
 ### Option 4: Manual Build
 
 ```bash
 git clone https://github.com/mkrowiarz/mcp-symfony-stack.git
 cd mcp-symfony-stack
-go build -o pm ./cmd/pm
+go build -o haive ./cmd/haive
 
 # Move to system PATH
-sudo mv pm /usr/local/bin/
+sudo mv haive /usr/local/bin/
 # Or to user-local bin
-mkdir -p ~/.local/bin && mv pm ~/.local/bin/
+mkdir -p ~/.local/bin && mv haive ~/.local/bin/
 ```
 
 ## Quick Start
@@ -54,28 +54,28 @@ mkdir -p ~/.local/bin && mv pm ~/.local/bin/
 ```bash
 # Initialize config for your project (preview)
 cd /path/to/your/project
-pm init
+haive init
 
 # Write config directly to .haive/config.json
-pm init --write
+haive init --write
 
 # Output with "pm" namespace (for adding to existing .haive.json)
-pm init --namespace
+haive init --namespace
 
 # Write namespaced config directly to .haive/config.json
-pm init --namespace --write
+haive init --namespace --write
 
 # Switch to a branch with automatic database switching
-pm checkout feature/pf-1234-demo --create
+haive checkout feature/pf-1234-demo --create
 
 # Just switch database for current branch
-pm switch
+haive switch
 
 # Run interactive TUI
 pm
 
 # Or use as MCP server for Claude Code
-pm --mcp
+haive --mcp
 ```
 
 ## Configuration
@@ -139,7 +139,7 @@ If you use `.haive.json` for multiple tools, you can namespace the `pm` config:
 {
   "project": "other-tool-config",
   "agents": ["claude"],
-  "pm": {
+  "haive": {
     "project": {
       "name": "my-project",
       "type": "symfony"
@@ -186,8 +186,8 @@ MCP servers are configured in `.claude/mcp.json` files.
 ```json
 {
   "mcpServers": {
-    "pm": {
-      "command": "pm",
+    "haive": {
+      "command": "haive",
       "args": ["--mcp"]
     }
   }
@@ -201,7 +201,7 @@ If `pm` is not in PATH, use the full path: `"command": "/home/user/go/bin/pm"`.
 ```json
 {
   "mcpServers": {
-    "pm": {
+    "haive": {
       "command": "pm",
       "args": ["--mcp"]
     }
@@ -257,33 +257,33 @@ Press `?` in TUI to see all shortcuts.
 
 ## CLI Commands
 
-### `pm checkout <branch>` - Switch branch with database
+### `haive checkout <branch>` - Switch branch with database
 
 Switches to a git branch and automatically switches to the corresponding database.
 
 ```bash
 # Checkout existing branch and its database
-pm checkout feature/my-feature
+haive checkout feature/my-feature
 
 # Create new branch with new database
-pm checkout feature/new-feature --create
+haive checkout feature/new-feature --create
 
 # Create branch and clone data from specific database
-pm checkout feature/demo --create --clone-from=symfony
+haive checkout feature/demo --create --clone-from=symfony
 ```
 
 **Database naming:** Branch `feature/pf-1234-demo` gets database `symfony_feature_pf_1234_demo` (based on your default DB name).
 
-### `pm switch` - Switch database for current branch
+### `haive switch` - Switch database for current branch
 
 Switches the database for your current branch without changing git branches.
 
 ```bash
 # Switch to database for current branch
-pm switch
+haive switch
 
 # Switch and clone from specific database
-pm switch --clone-from=symfony
+haive switch --clone-from=symfony
 ```
 
 **Automatic behavior:**
@@ -292,31 +292,31 @@ pm switch --clone-from=symfony
 - If database doesn't exist: automatically creates it
 - If feature branch: automatically clones from default database
 
-### `pm worktree` - Manage git worktrees
+### `haive worktree` - Manage git worktrees
 
 List, create, and remove git worktrees from the command line.
 
 ```bash
 # List all worktrees
-pm worktree list
-pm wt ls
+haive worktree list
+haive wt ls
 
 # Create worktree for existing branch
-pm worktree create feature/my-feature
+haive worktree create feature/my-feature
 pm wt create feature/my-feature
 
 # Create worktree with new branch
-pm worktree create feature/new-feature --new-branch
+haive worktree create feature/new-feature --new-branch
 pm wt add feature/new-feature -n
 
 # Remove worktree
-pm worktree remove feature/my-feature
+haive worktree remove feature/my-feature
 pm wt rm feature/my-feature
 ```
 
 **Note:** Worktree commands require the `worktrees` section in your config.
 
-### `pm serve` - Run app container for worktrees
+### `haive serve` - Run app container for worktrees
 
 Start and stop the app container for a worktree with isolated dependencies. Designed for OrbStack environments where each container gets automatic DNS (`.orb.local`).
 
@@ -325,10 +325,10 @@ Start and stop the app container for a worktree with isolated dependencies. Desi
 cd .worktrees/feature-my-feature
 
 # Start the app container
-pm serve
+haive serve
 
 # Stop the app container
-pm serve stop
+haive serve stop
 ```
 
 **How it works:**
@@ -393,7 +393,7 @@ The tool searches for config in this order:
 2. `.haive/config.json`
 3. `.haive.json`
 
-If you have an existing `.haive.json` with other tool configs, add the `pm` namespace (see "Shared Config with Other Tools" above).
+If you have an existing `.haive.json` with other tool configs, add the `haive` namespace (see "Shared Config with Other Tools" above).
 
 ### Database operations fail with "not in allowed list"
 

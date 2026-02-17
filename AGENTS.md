@@ -6,7 +6,7 @@ This file contains guidelines for agents working on this repository.
 
 ```bash
 # Build the main binary (local development)
-go build -o pm ./cmd/pm
+go build -o haive ./cmd/haive
 
 # Install to ~/go/bin using 'go install' (recommended for use)
 make install
@@ -15,8 +15,8 @@ make install
 make install-local
 
 # Build for multiple platforms
-go build -o pm-linux ./cmd/pm
-GOOS=darwin GOARCH=arm64 go build -o pm-mac-arm64 ./cmd/pm
+go build -o haive-linux ./cmd/haive
+GOOS=darwin GOARCH=arm64 go build -o haive-mac-arm64 ./cmd/haive
 
 # Run tests
 go test ./...
@@ -53,7 +53,7 @@ go mod verify
 
 ### Project Structure
 
-- `cmd/pm/` - Application entry point (routes to TUI, MCP, or CLI)
+- `cmd/haive/` - Application entry point (routes to TUI, MCP, or CLI)
 - `internal/core/` - Pure logic, no I/O opinions (config, commands, types)
 - `internal/executor/` - Shell command wrappers (docker, git, filesystem)
 - `internal/mcp/` - MCP interface adapter

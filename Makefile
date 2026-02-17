@@ -1,10 +1,10 @@
 .PHONY: build test clean install install-latest fmt lint all
 
-BINARY := pm
+BINARY := haive
 VERSION := 1.0.0
 BUILD_DIR := bin
-MAIN_PATH := ./cmd/pm
-PACKAGE := github.com/mkrowiarz/mcp-symfony-stack/cmd/pm
+MAIN_PATH := ./cmd/haive
+PACKAGE := github.com/mkrowiarz/mcp-symfony-stack/cmd/haive
 
 all: build
 
