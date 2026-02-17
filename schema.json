@@ -93,6 +93,33 @@
         "db_prefix": {
           "type": "string",
           "description": "Prefix for worktree databases (auto-generated if omitted)"
+        },
+        "copy": {
+          "type": "object",
+          "description": "File copy configuration for new worktrees",
+          "properties": {
+            "include": {
+              "type": "array",
+              "description": "Glob patterns for files to copy from project root to new worktree (e.g., '**/.env.local')",
+              "items": {
+                "type": "string"
+              },
+              "examples": [
+                ["**/.env.local", "config/local.yaml"]
+              ]
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Glob patterns for files to exclude from copying (e.g., 'vendor/', 'node_modules/')",
+              "items": {
+                "type": "string"
+              },
+              "examples": [
+                ["vendor/", "node_modules/", ".git/"]
+              ]
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

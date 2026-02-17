@@ -1,0 +1,153 @@
+# PM (Project Manager) Configuration
+# This is a comprehensive example showing all available options
+
+[project]
+name = "my-symfony-app"
+# Preset loads default configuration for Symfony projects
+# Available: "generic", "symfony", "laravel", or path to custom file: "./my-preset.toml"
+preset = "symfony"
+
+[docker]
+# Docker Compose files (relative to project root)
+compose_files = [
+    "compose.yaml",
+    "docker/dev/compose/compose.app.yaml",
+    "docker/dev/compose/compose.database.yaml"
+]
+# Optional: custom project name for docker compose
+# project_name = "myapp"
+
+[database]
+# Docker Compose service name for the database
+service = "database"
+# DSN - supports ${VAR} interpolation from .env files
+dsn = "${DATABASE_URL}"
+# Allowed database names (glob patterns)
+allowed = ["myapp", "myapp_*", "myapp_test_*"]
+# Directory for SQL dump files (relative to project root)
+dumps_path = "var/dumps"
+
+[database.hooks]
+# Run after database is cloned to a new worktree database
+# Environment: DATABASE_NAME, DATABASE_URL, SOURCE_DATABASE, REPO_ROOT
+postClone = [
+    "bin/console doctrine:migrations:migrate --no-interaction",
+    "bin/console cache:clear"
+]
+
+# Run before dropping a database
+# If hook fails (non-zero exit), drop is aborted unless --force is used
+# preDrop = [
+#     "echo 'About to drop $DATABASE_NAME'"
+# ]
+
+[worktree]
+# Base directory for worktrees (relative or absolute)
+base_path = ".worktrees"
+
+# Automatically create a database for each worktree (requires database section)
+db_per_worktree = true
+
+# Prefix for worktree databases (auto-generated from main DB name if omitted)
+# db_prefix = "myapp_wt_"
+
+[worktree.copy]
+# Files to copy from project root to new worktree
+# Supports glob patterns with ** for recursive matching
+include = [
+    "**/.env.local",
+    "**/.env.*.local",
+    "config/secrets.yaml"
+]
+
+# Files/directories to exclude from copying
+exclude = [
+    "vendor/",
+    "node_modules/",
+    ".git/",
+    "var/cache/",
+    "var/log/"
+]
+
+[worktree.hooks]
+# Run BEFORE creating a worktree
+# Environment: BRANCH, REPO_ROOT, PROJECT_NAME
+# preCreate = [
+#     "echo 'Creating worktree for $BRANCH'"
+# ]
+
+# Run AFTER worktree is created (and files are copied)
+# Environment: WORKTREE_PATH, WORKTREE_NAME, BRANCH, REPO_ROOT, PROJECT_NAME
+postCreate = [
+    "composer install --no-interaction",
+    "npm ci",
+    "bin/console cache:clear"
+]
+
+# Run BEFORE removing a worktree (runs inside worktree directory)
+# If hook fails (non-zero exit), removal is aborted unless --force is used
+# preRemove = [
+#     "echo 'Cleaning up worktree at $WORKTREE_PATH'"
+# ]
+
+# Run AFTER worktree is removed
+# Environment: BRANCH (the branch that was checked out), REPO_ROOT, PROJECT_NAME
+# postRemove = [
+#     "echo 'Removed worktree for branch $BRANCH'"
+# ]
+
+# ============================================
+# Alternative: Minimal Configuration
+# ============================================
+
+# For simple projects, you can use a preset and override only what you need:
+#
+# [project]
+# name = "simple-app"
+# preset = "generic"
+#
+# [docker]
+# compose_files = ["docker-compose.yaml"]
+#
+# [worktree]
+# base_path = ".worktrees"
+
+# ============================================
+# Alternative: No Preset, Full Customization
+# ============================================
+
+# [project]
+# name = "custom-app"
+# preset = "generic"
+#
+# [worktree]
+# base_path = ".worktrees"
+# 
+# [worktree.hooks]
+# postCreate = [
+#     "pip install -r requirements.txt",
+#     "cp config/local.example.py config/local.py"
+# ]
+
+# ============================================
+# Environment Variables Available to Hooks
+# ============================================
+#
+# All hooks:
+#   REPO_ROOT       - Absolute path to project root
+#   PROJECT_NAME    - Project name from config
+#
+# Worktree hooks:
+#   WORKTREE_PATH   - Absolute path to worktree directory
+#   WORKTREE_NAME   - Directory name of worktree (sanitized branch name)
+#   BRANCH          - Git branch name
+#
+# Database hooks:
+#   DATABASE_NAME   - Name of the database
+#   DATABASE_URL    - Full DSN URL
+#   DATABASE_HOST   - Database host
+#   DATABASE_PORT   - Database port
+#
+# Clone-specific hooks:
+#   SOURCE_DATABASE - Source database name (for postClone)
+#   TARGET_DATABASE - Target database name (for postClone)

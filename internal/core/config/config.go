@@ -39,9 +39,15 @@ type Database struct {
 }
 
 type Worktrees struct {
-	BasePath      string `json:"base_path"`
-	DBPerWorktree bool   `json:"db_per_worktree,omitempty"`
-	DBPrefix      string `json:"db_prefix,omitempty"`
+	BasePath      string           `json:"base_path"`
+	DBPerWorktree bool             `json:"db_per_worktree,omitempty"`
+	DBPrefix      string           `json:"db_prefix,omitempty"`
+	Copy          *WorktreeCopy    `json:"copy,omitempty"`
+}
+
+type WorktreeCopy struct {
+	Include []string `json:"include,omitempty"`
+	Exclude []string `json:"exclude,omitempty"`
 }
 
 // Phase 2: Database and Worktrees sections are not validated/used in phase 1

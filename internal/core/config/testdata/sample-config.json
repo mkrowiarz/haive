@@ -20,6 +20,17 @@
   "worktrees": {
     "base_path": "../worktrees",
     "db_per_worktree": true,
-    "db_prefix": "facility_app_wt_"
+    "db_prefix": "facility_app_wt_",
+    "copy": {
+      "include": [
+        "**/.env.local",
+        "**/.env.*.local"
+      ],
+      "exclude": [
+        "vendor/",
+        "node_modules/",
+        ".git/"
+      ]
+    }
   }
 }

@@ -90,6 +90,14 @@ func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeC
 		return nil, err
 	}
 
+	// Copy files if configured
+	if cfg.Worktrees.Copy != nil {
+		if err := pmcore.CopyWorktreeFiles(cfg.ProjectRoot, worktreePath, cfg.Worktrees.Copy); err != nil {
+			// Log warning but don't fail the operation
+			fmt.Fprintf(os.Stderr, "Warning: failed to copy worktree files: %v\n", err)
+		}
+	}
+
 	return &types.WorktreeCreateResult{
 		Path:   worktreePath,
 		Branch: branch,
