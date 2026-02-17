@@ -51,6 +51,12 @@ type WorktreeCopy struct {
 
 // Serve holds serve command configuration
 type Serve struct {
+	ComposeFiles []string       `json:"compose_files" toml:"compose_files"`
+	Worktree     *ServeWorktree `json:"worktree,omitempty" toml:"worktree,omitempty"`
+}
+
+// ServeWorktree holds worktree-specific serve configuration
+type ServeWorktree struct {
 	ComposeFiles []string `json:"compose_files" toml:"compose_files"`
 }
 

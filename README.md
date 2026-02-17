@@ -120,7 +120,10 @@ file = ".env.local"
 var_name = "DATABASE_URL"
 
 [serve]
-compose_files = ["docker-compose.yml", "compose.worktree.yaml"]
+compose_files = ["compose.yaml", "docker/dev/compose.database.yaml", "docker/dev/compose.app.yaml"]
+
+[serve.worktree]
+compose_files = ["docker/dev/compose.app.yaml"]
 ```
 
 **Note:** `database.allowed` is required when the database section is present. Use glob patterns like `["app", "app_*"]` to specify which databases can be operated on.
@@ -201,11 +204,16 @@ haive serve stop
 
 ```toml
 [serve]
-compose_files = ["docker-compose.yml", "compose.worktree.yaml"]
+compose_files = ["compose.yaml", "docker/dev/compose.database.yaml", "docker/dev/compose.app.yaml"]
+
+# Optional: different compose files for worktrees
+[serve.worktree]
+compose_files = ["docker/dev/compose.app.yaml"]
 ```
 
 - `compose_files`: Array of compose files to use with `docker compose up -d`
 - All files are passed with `-f` flags in order
+- If `[serve.worktree]` is configured, worktrees use those files instead
 - If `[serve]` is not configured, the command will error with instructions
 
 ### Database Hooks
@@ -250,6 +258,7 @@ preDrop = ["./scripts/backup-before-drop.sh"]
 | `worktree.env.file` | No | Env file to update with worktree database (e.g., `.env.local`) |
 | `worktree.env.var_name` | No | Variable name to set (e.g., `DATABASE_URL`) |
 | `serve.compose_files` | If serve section exists | Array of compose files for `haive serve` command |
+| `serve.worktree.compose_files` | No | Array of compose files for worktrees (overrides `serve.compose_files`) |
 
 ### Environment Variables
 

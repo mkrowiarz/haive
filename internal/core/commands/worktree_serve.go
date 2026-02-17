@@ -42,15 +42,17 @@ func Serve(projectRoot string) (*ServeResult, error) {
 		}
 	}
 
-	if cfg.Serve == nil || len(cfg.Serve.ComposeFiles) == 0 {
+	// 3. Determine which compose files to use
+	composeFiles := getComposeFiles(cfg, true)
+	if len(composeFiles) == 0 {
 		return nil, &types.CommandError{
 			Code:    types.ErrConfigMissing,
 			Message: "[serve] section not configured or compose_files is empty. Add [serve] with compose_files to your config.",
 		}
 	}
 
-	// 3. Verify all compose files exist
-	for _, f := range cfg.Serve.ComposeFiles {
+	// 4. Verify all compose files exist
+	for _, f := range composeFiles {
 		composePath := filepath.Join(projectRoot, f)
 		if _, err := os.Stat(composePath); os.IsNotExist(err) {
 			return nil, &types.CommandError{
@@ -60,11 +62,11 @@ func Serve(projectRoot string) (*ServeResult, error) {
 		}
 	}
 
-	// 4. Generate unique project name
+	// 5. Generate unique project name
 	projectName := generateProjectName(cfg, branch)
 
-	// 5. Start containers
-	if err := startContainers(projectRoot, projectName, cfg.Serve.ComposeFiles); err != nil {
+	// 6. Start containers
+	if err := startContainers(projectRoot, projectName, composeFiles); err != nil {
 		return nil, fmt.Errorf("failed to start containers: %w", err)
 	}
 
@@ -103,7 +105,9 @@ func Stop(projectRoot string) error {
 		}
 	}
 
-	if cfg.Serve == nil || len(cfg.Serve.ComposeFiles) == 0 {
+	// Determine which compose files to use
+	composeFiles := getComposeFiles(cfg, true)
+	if len(composeFiles) == 0 {
 		return &types.CommandError{
 			Code:    types.ErrConfigMissing,
 			Message: "[serve] section not configured or compose_files is empty. Add [serve] with compose_files to your config.",
@@ -115,7 +119,7 @@ func Stop(projectRoot string) error {
 
 	// Build docker compose command with all compose files
 	args := []string{"compose"}
-	for _, f := range cfg.Serve.ComposeFiles {
+	for _, f := range composeFiles {
 		args = append(args, "-f", f)
 	}
 	args = append(args, "-p", projectName, "down")
@@ -188,4 +192,20 @@ func startContainers(projectRoot, projectName string, composeFiles []string) err
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
+}
+
+// getComposeFiles returns the compose files to use based on context
+// If inWorktree is true and [serve.worktree] is configured, use worktree-specific files
+func getComposeFiles(cfg *config.Config, inWorktree bool) []string {
+	if cfg.Serve == nil {
+		return nil
+	}
+
+	// If in worktree and worktree-specific config exists, use it
+	if inWorktree && cfg.Serve.Worktree != nil && len(cfg.Serve.Worktree.ComposeFiles) > 0 {
+		return cfg.Serve.Worktree.ComposeFiles
+	}
+
+	// Otherwise use default serve config
+	return cfg.Serve.ComposeFiles
 }
