@@ -60,16 +60,19 @@ func main() {
 		case "mcp":
 			handleMCP(args[1:])
 			return
+		case "tui":
+			if err := tui.Run(); err != nil {
+				fmt.Fprintf(os.Stderr, "TUI error: %v\n", err)
+				os.Exit(1)
+			}
+			return
 		case "help", "--help", "-h":
 			printHelp()
 			return
 		}
 	}
 
-	if err := tui.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "TUI error: %v\n", err)
-		os.Exit(1)
-	}
+	printHelp()
 }
 
 func printHelp() {
@@ -89,15 +92,17 @@ func printHelp() {
 	fmt.Println(cyan + "haive" + reset + " - Development Environment Manager for Docker Compose-based development")
 	fmt.Println()
 	fmt.Println(bold + "Usage:" + reset)
-	fmt.Println("  " + green + "haive" + reset + "                   Run interactive TUI (default)")
-	fmt.Println("  " + green + "haive --mcp" + reset + "           Run as MCP server for Claude Code")
 	fmt.Println("  " + green + "haive <command> [flags]" + reset + "  Run specific command")
+	fmt.Println("  " + green + "haive --mcp" + reset + "              Run as MCP server for Claude Code")
 	fmt.Println()
 	fmt.Println(bold + "Commands:" + reset)
+	fmt.Println("  " + yellow + "tui" + reset + "                   Run interactive TUI")
 	fmt.Println("  " + yellow + "init" + reset + "                  Generate config for current project")
 	fmt.Println("  " + yellow + "checkout <branch>" + reset + "     Switch git branch and database")
 	fmt.Println("  " + yellow + "switch" + reset + "                Switch database for current branch")
 	fmt.Println("  " + yellow + "worktree <cmd>" + reset + "        Manage git worktrees")
+	fmt.Println("  " + yellow + "serve <cmd>" + reset + "           Start/stop worktree containers")
+	fmt.Println("  " + yellow + "mcp <cmd>" + reset + "             Manage MCP server configuration")
 	fmt.Println("  " + yellow + "help" + reset + "                  Show this help message")
 	fmt.Println()
 	fmt.Println(bold + "Init Flags:" + reset)
