@@ -83,19 +83,14 @@ func (m Model) loadProject() tea.Msg {
 		return projectLoadedMsg{name: "Error", ptype: err.Error(), status: "✗"}
 	}
 
-	name := "Unknown"
-	ptype := "generic"
+	name := "Project"
 	status := "✗"
 
-	if info.ConfigSummary != nil {
-		name = info.ConfigSummary.Name
-		ptype = info.ConfigSummary.Type
-	}
 	if info.DockerComposeExists {
 		status = "✓"
 	}
 
-	return projectLoadedMsg{name: name, ptype: ptype, status: status}
+	return projectLoadedMsg{name: name, ptype: "", status: status}
 }
 
 func (m Model) loadWorktrees() tea.Msg {
@@ -627,7 +622,7 @@ func (m Model) View() string {
 
 	paneWidth := m.width - 4
 
-	infoContent := fmt.Sprintf("Project: %s | Type: %s | Compose: %s", m.projectName, m.projectType, m.projectStatus)
+	infoContent := fmt.Sprintf("Compose: %s", m.projectStatus)
 	infoPane := m.renderPane("Info", infoContent, 1, paneWidth)
 
 	var wtItems []string

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/config"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/types"
 	"gopkg.in/yaml.v3"
 )
@@ -19,21 +18,7 @@ func Info(projectRoot string) (*types.ProjectInfo, error) {
 		projectRoot = "."
 	}
 
-	// Try to load config
-	var configSummary *types.ConfigSummary
-	if cfg, err := config.LoadHaive(projectRoot); err == nil && cfg != nil {
-		configSummary = &types.ConfigSummary{
-			Name: detectProjectName(projectRoot),
-			Type: detectProjectType(projectRoot),
-		}
-		// Override with config values if available
-		if cfg.Docker.ProjectName != "" {
-			configSummary.Name = cfg.Docker.ProjectName
-		}
-	}
-
 	return &types.ProjectInfo{
-		ConfigSummary:       configSummary,
 		EnvFiles:            detectEnvFiles(projectRoot),
 		DockerComposeExists: dockerComposeExists(projectRoot),
 	}, nil

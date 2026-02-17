@@ -42,14 +42,8 @@ const (
 type ProgressFunc func(stage ProgressStage, detail string)
 
 type ProjectInfo struct {
-	ConfigSummary       *ConfigSummary `json:"config_summary"`
-	EnvFiles            []string       `json:"env_files"`
-	DockerComposeExists bool           `json:"docker_compose_exists"`
-}
-
-type ConfigSummary struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+	EnvFiles            []string `json:"env_files"`
+	DockerComposeExists bool     `json:"docker_compose_exists"`
 }
 
 type InitSuggestion struct {

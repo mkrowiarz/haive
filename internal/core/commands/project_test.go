@@ -8,7 +8,7 @@ import (
 )
 
 func TestInfo(t *testing.T) {
-	t.Run("missing config returns info with nil summary", func(t *testing.T) {
+	t.Run("missing config returns info", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		info, err := Info(tmpDir)
 
@@ -17,28 +17,13 @@ func TestInfo(t *testing.T) {
 			return
 		}
 
-		if info.ConfigSummary != nil {
-			t.Error("expected nil ConfigSummary for missing config")
-		}
-
 		if info.DockerComposeExists {
 			t.Error("expected DockerComposeExists to be false in empty dir")
 		}
 	})
 
-	t.Run("existing config returns populated info", func(t *testing.T) {
+	t.Run("existing compose file returns info", func(t *testing.T) {
 		tmpDir := t.TempDir()
-
-		configPath := filepath.Join(tmpDir, ".haive.json")
-
-		sampleConfig, err := os.ReadFile(filepath.Join("../config/testdata", "sample-config.json"))
-		if err != nil {
-			t.Fatalf("failed to read sample config: %v", err)
-		}
-
-		if err := os.WriteFile(configPath, sampleConfig, 0644); err != nil {
-			t.Fatalf("failed to write config: %v", err)
-		}
 
 		composePath := filepath.Join(tmpDir, "docker-compose.yaml")
 		composeContent := `services:
@@ -53,12 +38,6 @@ func TestInfo(t *testing.T) {
 
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
-			return
-		}
-
-		// ConfigSummary is now always nil since we removed [project] section
-		if info.ConfigSummary != nil {
-			t.Error("expected ConfigSummary to be nil")
 			return
 		}
 
