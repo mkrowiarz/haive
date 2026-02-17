@@ -80,12 +80,28 @@ haive --mcp
 
 ## Configuration
 
-Config file locations (checked in order):
-1. `.claude/project.json` (recommended)
-2. `.haive/config.json`
-3. `.haive.json`
+Haive supports TOML (recommended), YAML, and JSON config formats. Config files are searched in priority order:
 
-### Minimal Config
+1. `haive.toml` (TOML - recommended)
+2. `.haive/config.toml`
+3. `haive.yaml` (YAML)
+4. `.haive/config.yaml`
+5. `haive.json` (JSON)
+6. `.haive/config.json`
+7. `.claude/project.json` (JSON, legacy)
+
+### Minimal Config (TOML)
+
+```toml
+[project]
+name = "my-project"
+type = "symfony"
+
+[docker]
+compose_files = ["docker-compose.yaml"]
+```
+
+### Minimal Config (JSON - Legacy)
 
 ```json
 {
@@ -100,40 +116,52 @@ Config file locations (checked in order):
 }
 ```
 
-### Full Config with Database
+### Full Config with Database and Worktrees (TOML)
 
-```json
-{
-  "$schema": "https://raw.githubusercontent.com/mkrowiarz/mcp-symfony-stack/main/schema.json",
-  "project": {
-    "name": "my-project",
-    "type": "symfony"
-  },
-  "docker": {
-    "compose_files": [
-      "compose.yaml",
-      "docker/dev/compose/compose.app.yaml",
-      "docker/dev/compose/compose.database.yaml"
-    ]
-  },
-  "database": {
-    "service": "database",
-    "dsn": "${DATABASE_URL}",
-    "allowed": ["myapp", "myapp_*"],
-    "dumps_path": "var/dumps"
-  },
-  "worktrees": {
-    "base_path": "/path/to/worktrees",
-    "db_per_worktree": true
-  }
-}
+```toml
+[project]
+name = "my-project"
+type = "symfony"
+
+[docker]
+compose_files = [
+  "compose.yaml",
+  "docker/dev/compose/compose.app.yaml",
+  "docker/dev/compose/compose.database.yaml"
+]
+
+[database]
+service = "database"
+dsn = "${DATABASE_URL}"
+allowed = ["myapp", "myapp_*"]
+dumps_path = "var/dumps"
+
+[database.hooks]
+postClone = ["./scripts/seed.sh"]
+preDrop = ["./scripts/backup.sh"]
+
+[worktree]
+base_path = ".worktrees"
+db_per_worktree = true
+
+[worktree.copy]
+include = [".env.local", "config/**/*.yaml"]
+exclude = ["vendor/", "node_modules/"]
+
+[worktree.hooks]
+postCreate = ["composer install", "npm install"]
+preRemove = ["./scripts/cleanup.sh"]
+
+[worktree.env]
+file = ".env.local"
+var_name = "DATABASE_URL"
 ```
 
 **Note:** `database.allowed` is required when the database section is present. Use glob patterns like `["app", "app_*"]` to specify which databases can be operated on.
 
 ### Shared Config with Other Tools
 
-If you use `.haive.json` for multiple tools, you can namespace the `pm` config:
+If you use `.haive.json` for multiple tools, you can namespace the `haive` config:
 
 ```json
 {
@@ -156,6 +184,88 @@ If you use `.haive.json` for multiple tools, you can namespace the `pm` config:
 }
 ```
 
+## Worktree Features
+
+### File Copy Patterns
+
+When creating a worktree, you can automatically copy files from the main project using glob patterns:
+
+```toml
+[worktree.copy]
+include = [".env.local", "config/**/*.yaml", "secrets/**/*"]
+exclude = ["vendor/", "node_modules/", "*.log"]
+```
+
+- `include`: Files to copy (supports `**` for recursive matching)
+- `exclude`: Patterns to skip (applied after include)
+
+Common use cases:
+- Copy `.env.local` for local environment settings
+- Copy config files that shouldn't be in git
+- Copy secrets or certificates
+
+### Worktree Hooks
+
+Run commands at key points in the worktree lifecycle:
+
+```toml
+[worktree.hooks]
+postCreate = ["composer install", "npm install", "echo 'Worktree ready!'"]
+preRemove = ["./scripts/backup-worktree-data.sh"]
+postRemove = ["echo 'Worktree removed'"]
+```
+
+**Environment variables available to hooks:**
+- `REPO_ROOT` - Path to main repository
+- `PROJECT_NAME` - Project name from config
+- `WORKTREE_PATH` - Path to the worktree
+- `WORKTREE_NAME` - Name of the worktree
+- `BRANCH` - Git branch name
+
+**Hook behavior:**
+- `postCreate`: Runs after git worktree add completes. Failures are logged as warnings.
+- `preRemove`: Runs before removing worktree. Non-zero exit prevents removal.
+- `postRemove`: Runs after worktree removed. Failures are logged as warnings.
+
+### Database Per Worktree
+
+Automatically manage separate databases for each worktree:
+
+```toml
+[worktree]
+base_path = ".worktrees"
+db_per_worktree = true
+
+[worktree.env]
+file = ".env.local"
+var_name = "DATABASE_URL"
+```
+
+When a worktree is created:
+1. Database name is tracked in git config (`haive.database`)
+2. `.env.local` is automatically updated with worktree-specific `DATABASE_URL`
+
+### Database Hooks
+
+Run commands during database operations:
+
+```toml
+[database.hooks]
+postClone = ["./scripts/seed-database.sh"]
+preDrop = ["./scripts/backup-before-drop.sh"]
+```
+
+**Environment variables available to database hooks:**
+- `REPO_ROOT`, `PROJECT_NAME`
+- `DATABASE_NAME` - The database being operated on
+- `DATABASE_URL` - Full connection URL
+- `SOURCE_DATABASE` - Source DB (for clone operations)
+- `TARGET_DATABASE` - Target DB (for clone operations)
+
+**Hook behavior:**
+- `postClone`: Runs after successful database clone. Failures are logged as warnings.
+- `preDrop`: Runs before dropping database. Non-zero exit prevents the drop.
+
 ### Configuration Fields
 
 | Field | Required | Description |
@@ -167,8 +277,17 @@ If you use `.haive.json` for multiple tools, you can namespace the `pm` config:
 | `database.dsn` | If database section exists | Database URL (supports `${VAR}` interpolation) |
 | `database.allowed` | If database section exists | Glob patterns for allowed databases (e.g., `["app", "app_*"]`) |
 | `database.dumps_path` | No | Directory for SQL dumps (default: `var/dumps`) |
-| `worktrees.base_path` | If worktrees section exists | Directory for worktrees |
-| `worktrees.db_per_worktree` | No | Auto-create database per worktree |
+| `database.hooks.postClone` | No | Commands to run after database clone |
+| `database.hooks.preDrop` | No | Commands to run before database drop (can prevent drop) |
+| `worktree.base_path` | If worktree section exists | Directory for worktrees |
+| `worktree.db_per_worktree` | No | Auto-create database per worktree |
+| `worktree.copy.include` | No | File patterns to copy when creating worktree (glob, `**` supported) |
+| `worktree.copy.exclude` | No | Patterns to exclude from copy |
+| `worktree.hooks.postCreate` | No | Commands to run after worktree creation |
+| `worktree.hooks.preRemove` | No | Commands to run before worktree removal (can prevent removal) |
+| `worktree.hooks.postRemove` | No | Commands to run after worktree removal |
+| `worktree.env.file` | No | Env file to update with worktree database (e.g., `.env.local`) |
+| `worktree.env.var_name` | No | Variable name to set (e.g., `DATABASE_URL`) |
 
 ### Environment Variables
 
@@ -297,6 +416,9 @@ haive switch --clone-from=symfony
 List, create, and remove git worktrees from the command line.
 
 ```bash
+# Show help
+haive worktree --help
+
 # List all worktrees
 haive worktree list
 haive wt ls
@@ -314,7 +436,7 @@ haive worktree remove feature/my-feature
 haive wt rm feature/my-feature
 ```
 
-**Note:** Worktree commands require the `worktrees` section in your config.
+**Note:** Worktree commands require the `worktree` section in your config. See [Worktree Features](#worktree-features) for advanced configuration (file copying, hooks, database per worktree).
 
 ### `haive serve` - Run app container for worktrees
 
@@ -388,12 +510,16 @@ If you see errors mentioning `mysqldump: [Warning] Using a password...`, this is
 
 ### Config not found
 
-The tool searches for config in this order:
-1. `.claude/project.json` (recommended)
-2. `.haive/config.json`
-3. `.haive.json`
+The tool searches for config in priority order. TOML is recommended:
+1. `haive.toml` (recommended)
+2. `.haive/config.toml`
+3. `haive.yaml`
+4. `.haive/config.yaml`
+5. `haive.json`
+6. `.haive/config.json`
+7. `.claude/project.json` (legacy)
 
-If you have an existing `.haive.json` with other tool configs, add the `haive` namespace (see "Shared Config with Other Tools" above).
+If you have an existing `.haive.json` with other tool configs, add the `haive` namespace (see [Shared Config with Other Tools](#shared-config-with-other-tools) above).
 
 ### Database operations fail with "not in allowed list"
 
