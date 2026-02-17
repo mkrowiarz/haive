@@ -10,6 +10,7 @@ import (
 
 	pmcore "github.com/mkrowiarz/mcp-symfony-stack/internal/core"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/config"
+	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/hooks"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/core/types"
 	worktreepkg "github.com/mkrowiarz/mcp-symfony-stack/internal/core/worktree"
 	"github.com/mkrowiarz/mcp-symfony-stack/internal/executor"
@@ -42,46 +43,80 @@ func List(projectRoot string) ([]types.WorktreeInfo, error) {
 	return result, nil
 }
 
-func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeCreateResult, error) {
-	cfg, err := config.Load(projectRoot)
-	if err != nil {
-		return nil, err
-	}
-
-	if cfg.Worktrees == nil {
-		// Check if we're in an interactive terminal
-		if !isTerminal() {
-			return nil, &types.CommandError{
-				Code:    types.ErrConfigMissing,
-				Message: "worktrees not configured. Add worktrees.base_path to your config first",
-			}
-		}
-
-		// For CLI mode: prompt user for worktrees base path
-		basePath, err := promptForWorktreesPath(projectRoot)
-		if err != nil {
-			return nil, err
-		}
-
-		// Update config with worktrees section
-		cfg.Worktrees = &config.Worktrees{
-			BasePath: basePath,
-		}
-		if err := updateConfigWorktrees(projectRoot, basePath); err != nil {
-			return nil, fmt.Errorf("failed to update config: %w", err)
+// PreValidateWorktree checks if worktree creation prerequisites are met
+func PreValidateWorktree(cfg *config.HaiveConfig, branch string) error {
+	// Check branch name is valid
+	if branch == "" {
+		return &types.CommandError{
+			Code:    types.ErrInvalidWorktree,
+			Message: "branch name cannot be empty",
 		}
 	}
 
 	if err := pmcore.ValidateBranchName(branch); err != nil {
+		return err
+	}
+
+	// Check for path traversal
+	dirName, _ := pmcore.SanitizeWorktreeName(branch)
+	worktreePath := filepath.Join(cfg.Worktree.BasePath, dirName)
+	if err := pmcore.CheckPathTraversal(worktreePath, cfg.Worktree.BasePath); err != nil {
+		return err
+	}
+
+	// Check if worktree already exists (git or directory)
+	gitWorktrees, err := executor.GitWorktreeList()
+	if err != nil {
+		return err
+	}
+
+	for _, wt := range gitWorktrees {
+		if wt.Branch == branch || strings.Contains(wt.Path, dirName) {
+			return &types.CommandError{
+				Code:    types.ErrInvalidWorktree,
+				Message: fmt.Sprintf("worktree for branch %s already exists", branch),
+			}
+		}
+	}
+
+	if _, err := os.Stat(worktreePath); err == nil {
+		return &types.CommandError{
+			Code:    types.ErrInvalidWorktree,
+			Message: fmt.Sprintf("directory %s already exists", worktreePath),
+		}
+	}
+
+	// If worktree.env is configured, validate database section exists
+	if cfg.Worktree.Env != nil && cfg.Database == nil {
+		return &types.CommandError{
+			Code:    types.ErrConfigInvalid,
+			Message: "worktree.env requires database configuration",
+		}
+	}
+
+	return nil
+}
+
+func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeCreateResult, error) {
+	cfg, err := config.LoadHaive(projectRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.Worktree == nil {
+		return nil, &types.CommandError{
+			Code:    types.ErrConfigMissing,
+			Message: "worktree not configured. Add worktree.base_path to your config first",
+		}
+	}
+
+	// Pre-validation
+	if err := PreValidateWorktree(cfg, branch); err != nil {
 		return nil, err
 	}
 
 	dirName, _ := pmcore.SanitizeWorktreeName(branch)
-	worktreePath := filepath.Join(cfg.Worktrees.BasePath, dirName)
-
-	if err := pmcore.CheckPathTraversal(worktreePath, cfg.Worktrees.BasePath); err != nil {
-		return nil, err
-	}
+	worktreePath := filepath.Join(cfg.Worktree.BasePath, dirName)
 
 	if err := os.MkdirAll(filepath.Dir(worktreePath), 0755); err != nil {
 		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
@@ -91,22 +126,28 @@ func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeC
 		return nil, err
 	}
 
-	// 1. Copy files using new copy system
-	if cfg.Worktrees.Copy != nil {
-		copyConfig := &config.CopyConfig{
-			Include: cfg.Worktrees.Copy.Include,
-			Exclude: cfg.Worktrees.Copy.Exclude,
-		}
-		if err := worktreepkg.CopyFiles(cfg.ProjectRoot, worktreePath, copyConfig); err != nil {
-			// Log warning but don't fail the operation
+	// 1. Copy files
+	if cfg.Worktree.Copy != nil {
+		if err := worktreepkg.CopyFiles(cfg.ProjectRoot, worktreePath, cfg.Worktree.Copy); err != nil {
 			fmt.Fprintf(os.Stderr, "Warning: failed to copy worktree files: %v\n", err)
 		}
 	}
 
-	// 2. Run postCreate hooks (placeholder for when we migrate fully to HaiveConfig)
-	// For now, hooks are not yet part of the old config.Worktrees struct
-	// When fully migrated, use hooks.NewExecutor() and hooks.HookContext from
-	// "github.com/mkrowiarz/mcp-symfony-stack/internal/core/hooks"
+	// 2. Run postCreate hooks
+	if cfg.Worktree.Hooks != nil && len(cfg.Worktree.Hooks.PostCreate) > 0 {
+		hookExec := hooks.NewExecutor(cfg.ProjectRoot)
+		hookCtx := &hooks.HookContext{
+			RepoRoot:     cfg.ProjectRoot,
+			ProjectName:  cfg.Project.Name,
+			WorktreePath: worktreePath,
+			WorktreeName: dirName,
+			Branch:       branch,
+		}
+
+		if err := hookExec.ExecuteHooks(cfg.Worktree.Hooks.PostCreate, hookCtx, worktreePath, false); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: postCreate hook failed: %v\n", err)
+		}
+	}
 
 	return &types.WorktreeCreateResult{
 		Path:   worktreePath,
@@ -115,15 +156,15 @@ func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeC
 }
 
 func Remove(projectRoot string, branch string) (*types.WorktreeRemoveResult, error) {
-	cfg, err := config.Load(projectRoot)
+	cfg, err := config.LoadHaive(projectRoot)
 	if err != nil {
 		return nil, err
 	}
 
-	if cfg.Worktrees == nil {
+	if cfg.Worktree == nil {
 		return nil, &types.CommandError{
 			Code:    types.ErrConfigMissing,
-			Message: "worktrees configuration is required for worktree operations",
+			Message: "worktree configuration is required for worktree operations",
 		}
 	}
 
@@ -132,14 +173,45 @@ func Remove(projectRoot string, branch string) (*types.WorktreeRemoveResult, err
 	}
 
 	dirName, _ := pmcore.SanitizeWorktreeName(branch)
-	worktreePath := filepath.Join(cfg.Worktrees.BasePath, dirName)
+	worktreePath := filepath.Join(cfg.Worktree.BasePath, dirName)
 
-	if err := pmcore.CheckPathTraversal(worktreePath, cfg.Worktrees.BasePath); err != nil {
+	if err := pmcore.CheckPathTraversal(worktreePath, cfg.Worktree.BasePath); err != nil {
 		return nil, err
+	}
+
+	// Run preRemove hooks (can abort removal)
+	if cfg.Worktree.Hooks != nil && len(cfg.Worktree.Hooks.PreRemove) > 0 {
+		hookExec := hooks.NewExecutor(cfg.ProjectRoot)
+		hookCtx := &hooks.HookContext{
+			RepoRoot:     cfg.ProjectRoot,
+			ProjectName:  cfg.Project.Name,
+			WorktreePath: worktreePath,
+			WorktreeName: dirName,
+			Branch:       branch,
+		}
+
+		if err := hookExec.ExecuteHooks(cfg.Worktree.Hooks.PreRemove, hookCtx, cfg.ProjectRoot, true); err != nil {
+			return nil, fmt.Errorf("preRemove hook prevented removal: %w", err)
+		}
 	}
 
 	if err := executor.GitWorktreeRemove(worktreePath); err != nil {
 		return nil, err
+	}
+
+	// Run postRemove hooks (fire and forget)
+	if cfg.Worktree.Hooks != nil && len(cfg.Worktree.Hooks.PostRemove) > 0 {
+		hookExec := hooks.NewExecutor(cfg.ProjectRoot)
+		hookCtx := &hooks.HookContext{
+			RepoRoot:     cfg.ProjectRoot,
+			ProjectName:  cfg.Project.Name,
+			WorktreeName: dirName,
+			Branch:       branch,
+		}
+
+		if err := hookExec.ExecuteHooks(cfg.Worktree.Hooks.PostRemove, hookCtx, cfg.ProjectRoot, false); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: postRemove hook failed: %v\n", err)
+		}
 	}
 
 	return &types.WorktreeRemoveResult{
@@ -235,7 +307,7 @@ func updateConfigWorktrees(projectRoot, basePath string) error {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
 
-	fmt.Printf("✓ Updated %s with worktrees configuration\n", configPath)
+	fmt.Printf("Updated %s with worktrees configuration\n", configPath)
 
 	// Add to .gitignore if path is inside project root
 	if strings.HasPrefix(basePath, projectRoot) || !filepath.IsAbs(basePath) {
@@ -244,7 +316,7 @@ func updateConfigWorktrees(projectRoot, basePath string) error {
 			relPath = basePath
 		}
 		if err := addToGitignore(projectRoot, relPath); err == nil {
-			fmt.Printf("✓ Added %s to .gitignore\n", relPath)
+			fmt.Printf("Added %s to .gitignore\n", relPath)
 		}
 	}
 

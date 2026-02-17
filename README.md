@@ -59,7 +59,7 @@ haive init
 # Write config directly to .haive/config.json
 haive init --write
 
-# Output with "pm" namespace (for adding to existing .haive.json)
+# Output with "haive" namespace (for adding to existing .haive.json)
 haive init --namespace
 
 # Write namespaced config directly to .haive/config.json
@@ -95,7 +95,7 @@ Haive supports TOML (recommended), YAML, and JSON config formats. Config files a
 ```toml
 [project]
 name = "my-project"
-type = "symfony"
+preset = "symfony"
 
 [docker]
 compose_files = ["docker-compose.yaml"]
@@ -108,7 +108,7 @@ compose_files = ["docker-compose.yaml"]
   "$schema": "https://raw.githubusercontent.com/mkrowiarz/mcp-symfony-stack/main/schema.json",
   "project": {
     "name": "my-project",
-    "type": "symfony"
+    "preset": "symfony"
   },
   "docker": {
     "compose_files": ["docker-compose.yaml"]
@@ -170,7 +170,7 @@ If you use `.haive.json` for multiple tools, you can namespace the `haive` confi
   "haive": {
     "project": {
       "name": "my-project",
-      "type": "symfony"
+      "preset": "symfony"
     },
     "docker": {
       "compose_files": ["docker-compose.yaml"]
@@ -271,7 +271,7 @@ preDrop = ["./scripts/backup-before-drop.sh"]
 | Field | Required | Description |
 |-------|----------|-------------|
 | `project.name` | Yes | Project name for display |
-| `project.type` | Yes | Project type: `symfony`, `laravel`, `generic` |
+| `project.preset` | Yes | Project preset: `symfony`, `laravel`, `generic` |
 | `docker.compose_files` | Yes | Array of compose file paths (relative to project root) |
 | `database.service` | If database section exists | Docker Compose service name |
 | `database.dsn` | If database section exists | Database URL (supports `${VAR}` interpolation) |
