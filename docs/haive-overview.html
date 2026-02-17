@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-"utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haive - Development Environment Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg: #ffffff;
+            --text: #1a1a1a;
+            --text-muted: #666;
+            --border: #ddd;
+            --accent: #333;
+            --code-bg: #f5f5f5;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.02em;
+        }
+        
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+        }
+        
+        h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 2.5rem 0 1rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 1.5rem 0 0.5rem;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+        
+        code {
+            font-family: "SF Mono", Monaco, monospace;
+            background: var(--code-bg);
+            padding: 0.15rem 0.35rem;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+        
+        pre {
+            background: #1e1e2e;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: #cdd6f4;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+        
+        .toml-key { color: #f38ba8; }
+        .toml-string { color: #a6e3a1; }
+        .toml-comment { color: #6c7086; font-style: italic; }
+        
+        ul, ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.35rem;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        
+        @media (max-width: 600px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .comparison-card {
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1rem;
+        }
+        
+        .comparison-card h4 {
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        
+        .badge.recommended {
+            background: #166534;
+            color: white;
+        }
+        
+        .badge.future {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding-left: 1.25rem;
+            position: relative;
+        }
+        
+        .feature-list li::before {
+            content: "-";
+            position: absolute;
+            left: 0;
+            color: var(--text-muted);
+        }
+        
+        .pros-cons h5 {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 1rem 0 0.35rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .pros-cons ul {
+            margin: 0.5rem 0;
+        }
+        
+        .workflow-step {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-left: 2px solid var(--border);
+        }
+        
+        .workflow-step strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .workflow-step p {
+            margin: 0.5rem 0 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        footer {
+            margin-top: 4rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Haive</h1>
+    <p class="subtitle">A modular development environment manager</p>
+
+    <p>Haive manages multi-branch development workflows with Git worktrees and database lifecycle management. Designed for Docker Compose-based projects like Symfony or Laravel.</p>
+
+    <h2>Features</h2>
+    <ul class="feature-list">
+        <li>Git worktrees with automated file copying and hooks</li>
+        <li>Database lifecycle: clone, dump, import, drop</li>
+        <li>TOML-based configuration with environment variable support</li>
+        <li>Per-worktree database isolation with environment management</li>
+        <li>Lifecycle hooks for automation</li>
+    </ul>
+
+    <h2>Configuration</h2>
+    <pre><code><span class="toml-comment"># haive.toml</span>
+<span class="toml-key">[project]</span>
+<span class="toml-key">name</span> = <span class="toml-string">"my-symfony-app"</span>
+
+<span class="toml-key">[docker]</span>
+<span class="toml-key">compose_files</span> = [<span class="toml-string">"compose.yaml"</span>]
+
+<span class="toml-key">[worktree]</span>
+<span class="toml-key">base_path</span> = <span class="toml-string">".worktrees"</span>
+
+<span class="toml-key">[worktree.copy]</span>
+<span class="toml-key">include</span> = [<span class="toml-string">"**/.env.local"</span>]
+<span class="toml-key">exclude</span> = [<span class="toml-string">"vendor/"</span>, <span class="toml-string">"node_modules/"</span>]
+
+<span class="toml-key">[worktree.hooks]</span>
+<span class="toml-key">postCreate</span> = [<span class="toml-string">"composer install"</span>]
+
+<span class="toml-key">[worktree.env]</span>
+<span class="toml-key">file</span> = <span class="toml-string">".env.local"</span>
+<span class="toml-key">var_name</span> = <span class="toml-string">"DATABASE_URL"</span>
+
+<span class="toml-key">[database]</span>
+<span class="toml-key">service</span> = <span class="toml-string">"database"</span>
+<span class="toml-key">dsn</span> = <span class="toml-string">"${DATABASE_URL}"</span>
+<span class="toml-key">allowed</span> = [<span class="toml-string">"myapp"</span>, <span class="toml-string">"myapp_*"</span>]
+
+<span class="toml-key">[database.hooks]</span>
+<span class="toml-key">postClone</span> = [<span class="toml-string">"bin/console doctrine:migrations:migrate"</span>]</code></pre>
+
+    <h2>Workflow</h2>
+
+    <div class="workflow-step">
+        <strong>Create worktree</strong>
+        <pre><code>haive worktree create feature/new-api</code></pre>
+        <p>Creates <code>.worktrees/feature-new-api/</code>, clones database, copies <code>.env.local</code>, runs <code>composer install</code>, updates <code>DATABASE_URL</code>.</p>
+    </div>
+
+    <div class="workflow-step">
+        <strong>Work in isolation</strong>
+        <pre><code>cd .worktrees/feature-new-api
+haive serve</code></pre>
+        <p>Worktree has isolated <code>vendor/</code>, <code>node_modules/</code>, and database.</p>
+    </div>
+
+    <div class="workflow-step">
+        <strong>Return to main</strong>
+        <pre><code>cd ../..</code></pre>
+        <p>Main project remains untouched and stable.</p>
+    </div>
+
+    <div class="workflow-step">
+        <strong>Clean up</strong>
+        <pre><code>haive worktree remove feature/new-api</code></pre>
+        <p>Removes worktree directory and drops associated database.</p>
+    </div>
+
+    <h2>Version Control Strategy</h2>
+
+    <div class="comparison">
+        <div class="comparison-card">
+            <h4>Git Worktrees <span class="badge recommended">Current</span></h4>
+            <p>Separate directories for each branch.</p>
+            
+            <div class="pros-cons">
+                <h5>Best for</h5>
+                <ul>
+                    <li>Concurrent instances</li>
+                    <li>Different dependency versions</li>
+                    <li>AI agents in parallel</li>
+                    <li>Multiple IDE windows</li>
+                </ul>
+                
+                <h5>Limitations</h5>
+                <ul>
+                    <li>Directory navigation</li>
+                    <li>Multiple vendor/ copies</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="comparison-card">
+            <h4>Jujutsu <span class="badge future">Future</span></h4>
+            <p>Single directory with fast change switching.</p>
+            
+            <div class="pros-cons">
+                <h5>Best for</h5>
+                <ul>
+                    <li>Fast context switching</li>
+                    <li>History rewriting</li>
+                    <li>Sequential work</li>
+                    <li>Disk efficiency</li>
+                </ul>
+                
+                <h5>Limitations</h5>
+                <ul>
+                    <li>One change active at a time</li>
+                    <li>Dependency reinstall on switch</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h3>Selection Guide</h3>
+
+    <p>Use <strong>Git Worktrees</strong> when you need to:</p>
+    <ul>
+        <li>Run multiple branches simultaneously</li>
+        <li>Maintain different PHP/Symfony versions per branch</li>
+        <li>Have AI agents work independently in separate directories</li>
+        <li>Keep separate IDE windows for different features</li>
+    </ul>
+
+    <p>Use <strong>Jujutsu</strong> when you:</p>
+    <ul>
+        <li>Work sequentially on one feature at a time</li>
+        <li>Do heavy history rewriting (rebase, squash, split)</li>
+        <li>Review many PRs daily requiring fast switching</li>
+        <li>Have disk space constraints</li>
+    </ul>
+
+    <h2>Commands</h2>
+
+    <h3>Worktree</h3>
+    <pre><code>haive worktree create feature/x     # Create with hooks
+haive worktree remove feature/x     # Remove (with preRemove hook)
+haive worktree list                 # List with databases
+haive worktree serve                # Start container</code></pre>
+
+    <h3>Database</h3>
+    <pre><code>haive database dump mydb            # Dump to var/dumps/
+haive database import mydb dump.sql # Import SQL file
+haive database clone source target  # Clone (runs postClone hook)
+haive database drop mydb            # Drop (runs preDrop hook)
+haive database list                 # List databases</code></pre>
+
+    <h2>Configuration Discovery</h2>
+    <p>Searched in order from current directory upward:</p>
+    <ol>
+        <li><code>haive.toml</code></li>
+        <li><code>.haive/config.toml</code></li>
+        <li><code>haive.yaml</code> / <code>.haive/config.yaml</code></li>
+        <li><code>haive.json</code> / <code>.haive/config.json</code></li>
+        <li>Legacy: <code>.claude/project.json</code></li>
+    </ol>
+
+    <h2>Hook Environment Variables</h2>
+    
+    <h3>All Hooks</h3>
+    <ul>
+        <li><code>REPO_ROOT</code> - Project root absolute path</li>
+        <li><code>PROJECT_NAME</code> - Project name from config</li>
+    </ul>
+
+    <h3>Worktree Hooks</h3>
+    <ul>
+        <li><code>WORKTREE_PATH</code> - Worktree directory path</li>
+        <li><code>WORKTREE_NAME</code> - Sanitized worktree name</li>
+        <li><code>BRANCH</code> - Git branch name</li>
+    </ul>
+
+    <h3>Database Hooks</h3>
+    <ul>
+        <li><code>DATABASE_NAME</code> - Database name</li>
+        <li><code>DATABASE_URL</code> - Connection string</li>
+        <li><code>SOURCE_DATABASE</code> - Source DB (postClone)</li>
+        <li><code>TARGET_DATABASE</code> - Target DB (postClone)</li>
+    </ul>
+
+    <footer>
+        <p>Haive is currently in development. This document reflects planned architecture and features.</p>
+    </footer>
+</body>
+</html>
