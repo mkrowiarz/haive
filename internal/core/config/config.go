@@ -31,11 +31,12 @@ type Docker struct {
 }
 
 type Database struct {
-	Service   string   `json:"service"`
-	DSN       string   `json:"dsn"`
-	Allowed   []string `json:"allowed"`
-	DumpsPath string   `json:"dumps_path,omitempty"`
-	Prefix    string   `json:"prefix,omitempty"`
+	Service   string         `json:"service"`
+	DSN       string         `json:"dsn"`
+	Allowed   []string       `json:"allowed"`
+	DumpsPath string         `json:"dumps_path,omitempty"`
+	Prefix    string         `json:"prefix,omitempty"`
+	Hooks     *DatabaseHooks `json:"hooks,omitempty"`
 }
 
 type Worktrees struct {

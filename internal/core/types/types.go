@@ -1,6 +1,10 @@
 package types
 
-import "time"
+import (
+	"fmt"
+	"net/url"
+	"time"
+)
 
 type ErrCode string
 
@@ -147,6 +151,46 @@ type DSN struct {
 	Port          string
 	Database      string
 	ServerVersion string
+}
+
+// String returns the DSN as a URL string
+func (d *DSN) String() string {
+	scheme := d.Engine
+	if scheme == "postgresql" {
+		scheme = "postgres"
+	}
+
+	var userInfo string
+	if d.Password != "" {
+		userInfo = fmt.Sprintf("%s:%s", d.User, d.Password)
+	} else if d.User != "" {
+		userInfo = d.User
+	}
+
+	hostPort := d.Host
+	if d.Port != "" {
+		hostPort = fmt.Sprintf("%s:%s", d.Host, d.Port)
+	}
+
+	path := "/" + d.Database
+
+	u := &url.URL{
+		Scheme: scheme,
+		Host:   hostPort,
+		Path:   path,
+	}
+
+	if userInfo != "" {
+		u.User = url.UserPassword(d.User, d.Password)
+	}
+
+	if d.ServerVersion != "" {
+		q := u.Query()
+		q.Set("serverVersion", d.ServerVersion)
+		u.RawQuery = q.Encode()
+	}
+
+	return u.String()
 }
 
 type DatabaseInfo struct {
