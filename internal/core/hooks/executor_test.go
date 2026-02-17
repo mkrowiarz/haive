@@ -22,15 +22,15 @@ func TestHookContext_ToEnv(t *testing.T) {
 	env := ctx.ToEnv()
 
 	expectedVars := map[string]string{
-		"REPO_ROOT=/project":       "REPO_ROOT=/project",
-		"PROJECT_NAME=myapp":       "PROJECT_NAME=myapp",
-		"WORKTREE_PATH=/project/.worktrees/feature": "WORKTREE_PATH=/project/.worktrees/feature",
-		"WORKTREE_NAME=feature":    "WORKTREE_NAME=feature",
-		"BRANCH=feature/test":      "BRANCH=feature/test",
-		"DATABASE_NAME=myapp_feature": "DATABASE_NAME=myapp_feature",
+		"REPO_ROOT=/project":                                   "REPO_ROOT=/project",
+		"PROJECT_NAME=myapp":                                   "PROJECT_NAME=myapp",
+		"WORKTREE_PATH=/project/.worktrees/feature":            "WORKTREE_PATH=/project/.worktrees/feature",
+		"WORKTREE_NAME=feature":                                "WORKTREE_NAME=feature",
+		"BRANCH=feature/test":                                  "BRANCH=feature/test",
+		"DATABASE_NAME=myapp_feature":                          "DATABASE_NAME=myapp_feature",
 		"DATABASE_URL=mysql://user:pass@db:3306/myapp_feature": "DATABASE_URL=mysql://user:pass@db:3306/myapp_feature",
-		"SOURCE_DATABASE=myapp":    "SOURCE_DATABASE=myapp",
-		"TARGET_DATABASE=myapp_feature": "TARGET_DATABASE=myapp_feature",
+		"SOURCE_DATABASE=myapp":                                "SOURCE_DATABASE=myapp",
+		"TARGET_DATABASE=myapp_feature":                        "TARGET_DATABASE=myapp_feature",
 	}
 
 	for expectedKey, expectedFull := range expectedVars {

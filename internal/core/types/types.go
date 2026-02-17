@@ -9,14 +9,14 @@ import (
 type ErrCode string
 
 const (
-	ErrConfigMissing     ErrCode = "CONFIG_MISSING"
-	ErrConfigInvalid     ErrCode = "CONFIG_INVALID"
-	ErrInvalidName       ErrCode = "INVALID_NAME"
-	ErrPathTraversal     ErrCode = "PATH_TRAVERSAL"
-	ErrDbNotAllowed      ErrCode = "DB_NOT_ALLOWED"
-	ErrDbIsDefault       ErrCode = "DB_IS_DEFAULT"
-	ErrFileNotFound      ErrCode = "FILE_NOT_FOUND"
-	ErrInvalidWorktree   ErrCode = "INVALID_WORKTREE"
+	ErrConfigMissing       ErrCode = "CONFIG_MISSING"
+	ErrConfigInvalid       ErrCode = "CONFIG_INVALID"
+	ErrInvalidName         ErrCode = "INVALID_NAME"
+	ErrPathTraversal       ErrCode = "PATH_TRAVERSAL"
+	ErrDbNotAllowed        ErrCode = "DB_NOT_ALLOWED"
+	ErrDbIsDefault         ErrCode = "DB_IS_DEFAULT"
+	ErrFileNotFound        ErrCode = "FILE_NOT_FOUND"
+	ErrInvalidWorktree     ErrCode = "INVALID_WORKTREE"
 	ErrDependenciesMissing ErrCode = "DEPENDENCIES_MISSING"
 )
 
@@ -84,10 +84,10 @@ type Database struct {
 }
 
 type Worktrees struct {
-	BasePath      string           `json:"base_path"`
-	DBPerWorktree bool             `json:"db_per_worktree,omitempty"`
-	DBPrefix      string           `json:"db_prefix,omitempty"`
-	Copy          *WorktreeCopy    `json:"copy,omitempty"`
+	BasePath      string        `json:"base_path"`
+	DBPerWorktree bool          `json:"db_per_worktree,omitempty"`
+	DBPrefix      string        `json:"db_prefix,omitempty"`
+	Copy          *WorktreeCopy `json:"copy,omitempty"`
 }
 
 type WorktreeCopy struct {
@@ -160,13 +160,6 @@ func (d *DSN) String() string {
 		scheme = "postgres"
 	}
 
-	var userInfo string
-	if d.Password != "" {
-		userInfo = fmt.Sprintf("%s:%s", d.User, d.Password)
-	} else if d.User != "" {
-		userInfo = d.User
-	}
-
 	hostPort := d.Host
 	if d.Port != "" {
 		hostPort = fmt.Sprintf("%s:%s", d.Host, d.Port)
@@ -180,7 +173,7 @@ func (d *DSN) String() string {
 		Path:   path,
 	}
 
-	if userInfo != "" {
+	if d.User != "" || d.Password != "" {
 		u.User = url.UserPassword(d.User, d.Password)
 	}
 

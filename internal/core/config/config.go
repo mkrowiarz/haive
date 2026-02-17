@@ -40,10 +40,10 @@ type Database struct {
 }
 
 type Worktrees struct {
-	BasePath      string           `json:"base_path"`
-	DBPerWorktree bool             `json:"db_per_worktree,omitempty"`
-	DBPrefix      string           `json:"db_prefix,omitempty"`
-	Copy          *WorktreeCopy    `json:"copy,omitempty"`
+	BasePath      string        `json:"base_path"`
+	DBPerWorktree bool          `json:"db_per_worktree,omitempty"`
+	DBPrefix      string        `json:"db_prefix,omitempty"`
+	Copy          *WorktreeCopy `json:"copy,omitempty"`
 }
 
 type WorktreeCopy struct {
@@ -64,7 +64,7 @@ func Load(projectRoot string) (*Config, error) {
 			Message: fmt.Sprintf("failed to resolve path: %v", err),
 		}
 	}
-	
+
 	for {
 		configPaths := []string{
 			filepath.Join(searchDir, ".claude", "project.json"),

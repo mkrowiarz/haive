@@ -56,13 +56,13 @@ func Create(projectRoot string, branch string, newBranch bool) (*types.WorktreeC
 				Message: "worktrees not configured. Add worktrees.base_path to your config first",
 			}
 		}
-		
+
 		// For CLI mode: prompt user for worktrees base path
 		basePath, err := promptForWorktreesPath(projectRoot)
 		if err != nil {
 			return nil, err
 		}
-		
+
 		// Update config with worktrees section
 		cfg.Worktrees = &config.Worktrees{
 			BasePath: basePath,
@@ -149,7 +149,7 @@ func Remove(projectRoot string, branch string) (*types.WorktreeRemoveResult, err
 
 func promptForWorktreesPath(projectRoot string) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
-	
+
 	fmt.Println()
 	fmt.Println("Worktrees configuration not found.")
 	fmt.Println()
@@ -157,25 +157,25 @@ func promptForWorktreesPath(projectRoot string) (string, error) {
 	fmt.Println("by checking them out into separate directories.")
 	fmt.Println()
 	fmt.Printf("Where would you like to store worktrees? (default: .worktrees): ")
-	
+
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		return "", fmt.Errorf("failed to read input: %w", err)
 	}
-	
+
 	input = strings.TrimSpace(input)
 	if input == "" {
 		input = ".worktrees"
 	}
-	
+
 	// Make it relative to project root if not absolute
 	if !filepath.IsAbs(input) {
 		input = filepath.Join(projectRoot, input)
 	}
-	
+
 	// Clean up the path
 	input = filepath.Clean(input)
-	
+
 	return input, nil
 }
 
@@ -186,7 +186,7 @@ func updateConfigWorktrees(projectRoot, basePath string) error {
 		filepath.Join(projectRoot, ".haive", "config.json"),
 		filepath.Join(projectRoot, ".haive.json"),
 	}
-	
+
 	var configPath string
 	for _, path := range configPaths {
 		if _, err := os.Stat(path); err == nil {
@@ -194,23 +194,23 @@ func updateConfigWorktrees(projectRoot, basePath string) error {
 			break
 		}
 	}
-	
+
 	if configPath == "" {
 		return fmt.Errorf("no config file found")
 	}
-	
+
 	// Read existing config
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read config: %w", err)
 	}
-	
+
 	// Parse config
 	var cfg map[string]interface{}
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return fmt.Errorf("failed to parse config: %w", err)
 	}
-	
+
 	// Check if it's namespaced
 	if pmConfig, ok := cfg["pm"].(map[string]interface{}); ok {
 		// Update namespaced config
@@ -224,19 +224,19 @@ func updateConfigWorktrees(projectRoot, basePath string) error {
 			"base_path": basePath,
 		}
 	}
-	
+
 	// Write back
 	data, err = json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
-	
+
 	if err := os.WriteFile(configPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write config: %w", err)
 	}
-	
+
 	fmt.Printf("✓ Updated %s with worktrees configuration\n", configPath)
-	
+
 	// Add to .gitignore if path is inside project root
 	if strings.HasPrefix(basePath, projectRoot) || !filepath.IsAbs(basePath) {
 		relPath, _ := filepath.Rel(projectRoot, basePath)
@@ -247,16 +247,16 @@ func updateConfigWorktrees(projectRoot, basePath string) error {
 			fmt.Printf("✓ Added %s to .gitignore\n", relPath)
 		}
 	}
-	
+
 	return nil
 }
 
 func addToGitignore(projectRoot, path string) error {
 	gitignorePath := filepath.Join(projectRoot, ".gitignore")
-	
+
 	// Normalize path for .gitignore (use forward slashes)
 	path = strings.ReplaceAll(path, "\\", "/")
-	
+
 	// Read existing .gitignore if it exists
 	content := ""
 	if data, err := os.ReadFile(gitignorePath); err == nil {
@@ -270,12 +270,12 @@ func addToGitignore(projectRoot, path string) error {
 			}
 		}
 	}
-	
+
 	// Add new line
 	if content != "" && !strings.HasSuffix(content, "\n") {
 		content += "\n"
 	}
 	content += "# Worktrees directory\n" + path + "/\n"
-	
+
 	return os.WriteFile(gitignorePath, []byte(content), 0644)
 }

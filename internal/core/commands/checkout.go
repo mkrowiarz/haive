@@ -69,7 +69,7 @@ func Switch(projectRoot string, cloneFrom string) (*SwitchResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// For docker operations, use the config's project root (handles worktrees)
 	dockerRoot := projectRoot
 	if cfg.ProjectRoot != "" {
@@ -265,5 +265,3 @@ func updateEnvLocalDatabase(projectRoot, originalDSN, newDBName string) error {
 
 	return os.WriteFile(envLocalPath, []byte(newContent), 0644)
 }
-
-

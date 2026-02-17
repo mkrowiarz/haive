@@ -162,7 +162,7 @@ func findProjectRoot(worktreeRoot string) (string, error) {
 	// gitDir is like: /path/to/main/.git/worktrees/branch-name
 	// We need: /path/to/main
 	mainGitDir := filepath.Dir(filepath.Dir(gitDir)) // Remove /worktrees/branch-name
-	mainRoot := filepath.Dir(mainGitDir)              // Remove /.git
+	mainRoot := filepath.Dir(mainGitDir)             // Remove /.git
 
 	return mainRoot, nil
 }

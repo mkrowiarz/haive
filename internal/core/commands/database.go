@@ -145,7 +145,7 @@ func DropDB(projectRoot, dbName string) (*types.DropResult, error) {
 	}
 
 	// Run preDrop hooks
-	if cfg.Database.Hooks != nil && len(cfg.Database.Hooks.PreDrop) > 0 {
+	if len(cfg.Database.Hooks.PreDrop) > 0 {
 		hookExec := hooks.NewExecutor(cfg.ProjectRoot)
 		hookCtx := &hooks.HookContext{
 			RepoRoot:     cfg.ProjectRoot,
@@ -254,29 +254,24 @@ func CloneDB(projectRoot, sourceDB, targetDB string) (*types.CloneResult, error)
 	os.Remove(tmpFile)
 
 	// Run postClone hooks
-	if cfg.Database.Hooks != nil && len(cfg.Database.Hooks.PostClone) > 0 {
+	if len(cfg.Database.Hooks.PostClone) > 0 {
 		hookExec := hooks.NewExecutor(cfg.ProjectRoot)
 
-		// Parse DSN to build DATABASE_URL for target
-		parsedDSN, err := dsn.ParseDSN(cfg.Database.DSN)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to parse DSN for hook: %v\n", err)
-		} else {
-			parsedDSN.Database = targetDB
-			targetDSN := parsedDSN.String()
+		// Build target DSN by modifying the existing parsed DSN
+		targetDSN := *parsedDSN
+		targetDSN.Database = targetDB
 
-			hookCtx := &hooks.HookContext{
-				RepoRoot:       cfg.ProjectRoot,
-				ProjectName:    cfg.Project.Name,
-				DatabaseName:   targetDB,
-				DatabaseURL:    targetDSN,
-				SourceDatabase: sourceDB,
-				TargetDatabase: targetDB,
-			}
+		hookCtx := &hooks.HookContext{
+			RepoRoot:       cfg.ProjectRoot,
+			ProjectName:    cfg.Project.Name,
+			DatabaseName:   targetDB,
+			DatabaseURL:    targetDSN.String(),
+			SourceDatabase: sourceDB,
+			TargetDatabase: targetDB,
+		}
 
-			if err := hookExec.ExecuteHooks(cfg.Database.Hooks.PostClone, hookCtx, cfg.ProjectRoot, false); err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: postClone hook failed: %v\n", err)
-			}
+		if err := hookExec.ExecuteHooks(cfg.Database.Hooks.PostClone, hookCtx, cfg.ProjectRoot, false); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: postClone hook failed: %v\n", err)
 		}
 	}
 
