@@ -318,8 +318,10 @@ haive mcp install claude --local
 ` + "```" + `
 
 Available MCP tools:
-- project_info, list_worktrees, create_worktree, remove_worktree
-- list_databases, clone_database, dump_database, drop_database, import_database
+- project.info, project.init
+- worktree.list, worktree.create, worktree.remove
+- db.list, db.clone, db.dump, db.create, db.drop, db.import, db.dumps
+- workflow.create, workflow.remove
 
 ## Full Reference
 
@@ -742,15 +744,20 @@ func installMCP(tool string, local bool) {
 	fmt.Println("Restart your AI assistant or start a new session to use haive tools.")
 	fmt.Println()
 	fmt.Println(yellow + "Available tools:" + reset)
-	fmt.Println("  • project_info       - Get project information")
-	fmt.Println("  • list_worktrees     - List all worktrees")
-	fmt.Println("  • create_worktree    - Create a new worktree")
-	fmt.Println("  • remove_worktree    - Remove a worktree")
-	fmt.Println("  • list_databases     - List all databases")
-	fmt.Println("  • clone_database     - Clone a database")
-	fmt.Println("  • dump_database      - Create a database dump")
-	fmt.Println("  • drop_database      - Drop a database")
-	fmt.Println("  • import_database    - Import a database from dump")
+	fmt.Println("  • project.info       - Get project information")
+	fmt.Println("  • project.init       - Generate suggested configuration")
+	fmt.Println("  • worktree.list      - List all worktrees")
+	fmt.Println("  • worktree.create    - Create a new worktree")
+	fmt.Println("  • worktree.remove    - Remove a worktree")
+	fmt.Println("  • db.list            - List all databases")
+	fmt.Println("  • db.clone           - Clone a database")
+	fmt.Println("  • db.dump            - Create a database dump")
+	fmt.Println("  • db.create          - Create a new database")
+	fmt.Println("  • db.drop            - Drop a database")
+	fmt.Println("  • db.import          - Import a database from dump")
+	fmt.Println("  • db.dumps           - List available SQL dump files")
+	fmt.Println("  • workflow.create    - Create worktree + database")
+	fmt.Println("  • workflow.remove    - Remove worktree + database")
 }
 
 func removeMCP(tool string, local bool) {
