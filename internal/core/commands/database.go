@@ -145,7 +145,7 @@ func DropDB(projectRoot, dbName string) (*types.DropResult, error) {
 	}
 
 	// Run preDrop hooks
-	if len(cfg.Database.Hooks.PreDrop) > 0 {
+	if cfg.Database.Hooks != nil && len(cfg.Database.Hooks.PreDrop) > 0 {
 		hookExec := hooks.NewExecutor(cfg.ProjectRoot)
 		hookCtx := &hooks.HookContext{
 			RepoRoot:     cfg.ProjectRoot,
@@ -253,7 +253,7 @@ func CloneDB(projectRoot, sourceDB, targetDB string) (*types.CloneResult, error)
 	os.Remove(tmpFile)
 
 	// Run postClone hooks
-	if len(cfg.Database.Hooks.PostClone) > 0 {
+	if cfg.Database.Hooks != nil && len(cfg.Database.Hooks.PostClone) > 0 {
 		hookExec := hooks.NewExecutor(cfg.ProjectRoot)
 
 		// Build target DSN by modifying the existing parsed DSN
